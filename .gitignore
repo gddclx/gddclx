@@ -1,0 +1,53 @@
+# ===== 敏感信息 =====
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.publishsettings
+secrets.*
+credentials.*
+application-secret.properties
+application-secret.yml
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== Java / Spring Boot =====
+target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# ===== Node.js =====
+node_modules/
+dist/
+
+# ===== WorkBuddy =====
+.workbuddy/
+
+# ===== OS =====
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# ===== 构建产物 =====
+build/
+out/
+*.log
