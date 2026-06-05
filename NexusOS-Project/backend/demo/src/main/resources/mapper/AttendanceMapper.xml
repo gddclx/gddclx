@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.AttendanceMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.demo.domain.Attendance">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="employee_id" property="employeeId" jdbcType="VARCHAR"/>
+        <result column="checkin_date" property="checkinDate" jdbcType="DATE"/>
+        <result column="checkin_time" property="checkinTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, employee_id, checkin_date, checkin_time, create_time
+    </sql>
+
+    <insert id="insert" parameterType="com.example.demo.domain.Attendance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO attendance (employee_id, checkin_date, checkin_time, create_time)
+        VALUES (#{employeeId}, #{checkinDate}, #{checkinTime}, #{createTime})
+    </insert>
+
+    <select id="selectByEmployeeIdAndDateStr" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM attendance
+        WHERE employee_id = #{employeeId} AND DATE_FORMAT(checkin_date, '%Y-%m-%d') = #{checkinDateStr}
+    </select>
+
+    <select id="countTodayCheckinStr" resultType="int">
+        SELECT COUNT(DISTINCT employee_id)
+        FROM attendance
+        WHERE DATE_FORMAT(checkin_date, '%Y-%m-%d') = #{todayStr}
+    </select>
+
+    <select id="selectByEmployeeIdAndDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM attendance
+        WHERE employee_id = #{employeeId}
+        AND checkin_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY checkin_date ASC
+    </select>
+
+    <select id="countByEmployeeIdAndDateRange" resultType="int">
+        SELECT COUNT(DISTINCT checkin_date)
+        FROM attendance
+        WHERE employee_id = #{employeeId}
+        AND checkin_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="countEmployeeTotal" resultType="int">
+        SELECT COUNT(*) FROM employee
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM attendance ORDER BY checkin_date DESC, checkin_time DESC
+    </select>
+
+</mapper>

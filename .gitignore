@@ -11,6 +11,8 @@ secrets.*
 credentials.*
 application-secret.properties
 application-secret.yml
+# 排除含真实密码的 application.properties，只提交 .example 模板
+application.properties
 
 # ===== IDE =====
 .idea/

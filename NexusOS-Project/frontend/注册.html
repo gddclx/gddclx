@@ -1,0 +1,189 @@
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusWork - 账号激活</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#2563eb',secondary:'#475569'},borderRadius:{'none':'0px','sm':'2px',DEFAULT:'4px','md':'8px','lg':'12px','xl':'16px','2xl':'20px','3xl':'24px','full':'9999px','button':'4px'}}}}</script>
+<link href="https://static.mastergo.com/static/ai/resource/html/googleapis/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://static.mastergo.com/static/ai/resource/html/font-awesome/css/all.min.css" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 1440px;
+    min-height: 1024px;
+    font-family: Arial, sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+}
+input {
+    outline: none;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    width: 100%;
+}
+button {
+    outline: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+i {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.font-pacifico {
+    font-family: 'Pacifico', cursive;
+}
+</style>
+</head>
+<body>
+
+<div class="w-[520px] bg-white p-[48px] rounded-[24px] shadow-[0_24px_48px_rgba(0,0,0,0.05)] border border-[#e2e8f0]">
+    <div class="flex items-center gap-[12px] mb-[32px] justify-center">
+        <div class="w-[40px] h-[40px] bg-primary rounded-[8px] flex items-center justify-center text-white text-[20px]">
+            <i class="fas fa-cube"></i>
+        </div>
+        <span class="font-pacifico text-[28px] text-primary">logo</span>
+    </div>
+    <h1 class="text-[32px] font-bold text-[#0f172a] mb-[16px] text-center">欢迎加入 NexusWork</h1>
+    <p class="text-[16px] text-secondary mb-[40px] text-center leading-[1.6]">请完善您的员工信息以激活系统账号</p>
+    
+    <form class="flex flex-col gap-[20px]" id="registerForm">
+        <div class="flex flex-col gap-[8px]">
+            <label class="text-[14px] font-medium text-[#334155]">真实姓名</label>
+            <div class="h-[52px] flex items-center bg-[#f8fafc] border border-[#cbd5e1] rounded-[8px] px-[16px] focus-within:border-primary focus-within:ring-[2px] focus-within:ring-primary/20 transition-all">
+                <i class="far fa-user text-[#94a3b8] mr-[12px] text-[18px]"></i>
+                <input type="text" id="name" placeholder="请输入您的真实姓名" class="text-[16px] text-[#0f172a] placeholder-[#94a3b8]">
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-[8px]">
+            <label class="text-[14px] font-medium text-[#334155]">员工工号</label>
+            <div class="h-[52px] flex items-center bg-[#f8fafc] border border-[#cbd5e1] rounded-[8px] px-[16px] focus-within:border-primary focus-within:ring-[2px] focus-within:ring-primary/20 transition-all">
+                <i class="far fa-id-badge text-[#94a3b8] mr-[12px] text-[18px]"></i>
+                <input type="text" id="employee_id" placeholder="请输入 HR 分配的工号" class="text-[16px] text-[#0f172a] placeholder-[#94a3b8]">
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-[8px]">
+            <label class="text-[14px] font-medium text-[#334155]">设置密码</label>
+            <div class="h-[52px] flex items-center bg-[#f8fafc] border border-[#cbd5e1] rounded-[8px] px-[16px] focus-within:border-primary focus-within:ring-[2px] focus-within:ring-primary/20 transition-all">
+                <i class="fas fa-lock text-[#94a3b8] mr-[12px] text-[18px]"></i>
+                <input type="password" id="password" placeholder="至少 8 位，包含字母与数字" class="text-[16px] text-[#0f172a] placeholder-[#94a3b8]">
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-[8px]">
+            <label class="text-[14px] font-medium text-[#334155]">确认密码</label>
+            <div class="h-[52px] flex items-center bg-[#f8fafc] border border-[#cbd5e1] rounded-[8px] px-[16px] focus-within:border-primary focus-within:ring-[2px] focus-within:ring-primary/20 transition-all">
+                <i class="fas fa-shield-check text-[#94a3b8] mr-[12px] text-[18px]"></i>
+                <input type="password" id="confirm_password" placeholder="请再次输入密码" class="text-[16px] text-[#0f172a] placeholder-[#94a3b8]">
+            </div>
+        </div>
+        
+        <!-- 错误提示 -->
+        <div id="errorMsg" class="hidden text-center text-red-600 text-sm font-medium bg-red-50 px-4 py-2 rounded-lg"></div>
+        
+        <button type="submit" id="submitBtn" class="h-[56px] mt-[16px] bg-primary text-white text-[18px] font-bold flex items-center justify-center !rounded-button whitespace-nowrap hover:bg-[#1d4ed8] shadow-[0_8px_16px_rgba(37,99,235,0.2)]">
+            <span id="btnText">立即激活账号</span>
+            <span id="btnLoading" class="hidden">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                注册中...
+            </span>
+        </button>
+    </form>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const employeeId = document.getElementById('employee_id').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoading = document.getElementById('btnLoading');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            errorMsg.classList.add('hidden');
+            
+            if (password !== confirmPassword) {
+                errorMsg.textContent = '两次输入的密码不一致';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            
+            if (password.length < 8) {
+                errorMsg.textContent = '密码长度至少8位';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            
+            btnText.classList.add('hidden');
+            btnLoading.classList.remove('hidden');
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        employee_id: employeeId,
+                        password: password,
+                        confirm_password: confirmPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    alert(result.message || '注册成功，请登录');
+                    window.location.href = '登录.html';
+                } else {
+                    errorMsg.textContent = result.message || '注册失败，请重试';
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMsg.textContent = '网络错误，请检查后端服务是否启动';
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btnText.classList.remove('hidden');
+                btnLoading.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+    
+    <div class="mt-[24px] text-center text-[14px] text-[#64748b]">
+        激活即代表您同意 <a href="#" class="text-primary hover:underline">《用户服务协议》</a> 与 <a href="#" class="text-primary hover:underline">《隐私政策》</a>
+    </div>
+</div>
+
+</body>
+</html>

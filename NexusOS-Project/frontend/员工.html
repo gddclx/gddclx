@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工档案管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1A56DB',
+                        secondary: '#F3F4F6',
+                        'primary-50': '#eff6ff',
+                        'primary-100': '#dbeafe',
+                        'primary-500': '#1A56DB',
+                        'primary-600': '#1e40af',
+                        'primary-900': '#1e3a8a',
+                        'nexus-dark': '#0a1128',
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '2px',
+                        DEFAULT: '4px',
+                        'md': '8px',
+                        'lg': '12px',
+                        'xl': '16px',
+                        '2xl': '20px',
+                        '3xl': '24px',
+                        'full': '9999px',
+                        'button': '4px'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', "Segoe UI", 'Roboto', "Helvetica Neue", 'Arial', 'sans-serif'],
+                        pacifico: ['Pacifico', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://static.mastergo.com/static/ai/resource/html/font-awesome/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f6f9fc;
+            background-image: radial-gradient(at 0% 0%, rgba(26, 86, 219, 0.1) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border-radius: 24px;
+            transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .interactive-element {
+            transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .interactive-element:hover {
+            transform: scale(1.05);
+        }
+        #logo-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            margin: 0;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 50;
+        }
+        #logo-menu.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+        dialog {
+            border: none;
+            border-radius: 24px;
+            padding: 0;
+            background: transparent;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        dialog::backdrop {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+        }
+        select:focus, input:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 font-sans p-4 md:p-8 flex flex-col">
+    <header class="flex justify-between items-center w-full max-w-7xl mx-auto mb-6">
+        <div class="flex items-center gap-3">
+            <div class="relative" id="logoWrapper">
+                <button id="logoBtn" class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md flex items-center justify-center interactive-element cursor-pointer">
+                    <i class="fas fa-layer-group text-white text-lg flex justify-center items-center"></i>
+                </button>
+                <div id="logo-menu" class="glass-card w-48 p-2 bg-white/95 border-slate-200 m-0 shadow-xl z-50 rounded-xl">
+                    <div class="py-2 flex flex-col gap-1">
+                        <a href="javascript:history.back()" class="px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors flex items-center gap-2">
+                            <i class="fas fa-arrow-left w-4"></i> 回到上一页
+                        </a>
+                        <a href="登录.html" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+                            <i class="fas fa-sign-out-alt w-4"></i> 退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="window.location.href='员工.html'">logo</h1>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col max-w-7xl mx-auto w-full gap-6 overflow-hidden">
+        <div class="flex justify-between items-end shrink-0">
+            <div class="flex flex-col">
+                <h1 class="text-2xl font-bold">员工档案管理</h1>
+                <span class="text-sm text-slate-500 mt-1" id="totalCountText">全面管理企业员工信息</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input id="searchInput" type="text" placeholder="按姓名或工号搜索..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white w-56 focus:border-primary focus:ring-1 focus:ring-primary/20">
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card flex flex-col overflow-hidden">
+            <div class="h-14 px-6 border-b border-slate-200 bg-slate-50/50 flex items-center text-xs font-bold text-slate-600 shrink-0">
+                <div class="w-28 shrink-0">工号</div>
+                <div class="w-32 shrink-0">姓名</div>
+                <div class="flex-1 min-w-36">所属部门</div>
+                <div class="w-28 shrink-0">入职时间</div>
+                <div class="w-20 shrink-0">状态</div>
+                <div class="w-28 shrink-0 text-right">操作</div>
+            </div>
+
+            <div id="tableBody" class="flex flex-col flex-1 overflow-y-auto">
+                <div class="min-h-[72px] py-3 px-6 flex items-center justify-center text-slate-400 text-sm">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> 正在加载数据...
+                </div>
+            </div>
+
+            <div class="h-14 px-6 border-t border-slate-200 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <span class="text-sm text-slate-500" id="paginationInfo">正在加载...</span>
+                <div class="flex items-center gap-2" id="paginationBtns"></div>
+            </div>
+        </div>
+    </main>
+
+    <dialog id="editDialog" class="glass-card w-full max-w-lg">
+        <div class="bg-white rounded-3xl p-8">
+            <h2 class="text-xl font-bold text-slate-800 mb-6" id="dialogTitle">新增员工</h2>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">姓名</label>
+                    <input id="editName" type="text" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:border-primary focus:ring-1 focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">工号</label>
+                    <input id="editEmployeeId" type="text" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:border-primary focus:ring-1 focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">所属部门</label>
+                    <select id="editDepartment" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 appearance-none">
+                        <option value="">请选择部门</option>
+                        <option value="人力资源">人力资源</option>
+                        <option value="技术研发">技术研发</option>
+                        <option value="市场营销">市场营销</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">岗位职务</label>
+                    <input id="editPosition" type="text" placeholder="请输入岗位职务" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:border-primary focus:ring-1 focus:ring-primary/20">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">状态</label>
+                    <select id="editStatus" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:border-primary focus:ring-1 focus:ring-primary/20 appearance-none">
+                        <option value="在职">在职</option>
+                        <option value="试用">试用</option>
+                        <option value="已离职">已离职</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button id="dialogCancelBtn" class="flex-1 h-11 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">取消</button>
+                <button id="dialogSaveBtn" class="flex-1 h-11 bg-primary text-white rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">保存</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="deleteDialog" class="glass-card w-full max-w-sm">
+        <div class="bg-white rounded-3xl p-8 text-center">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-lg"></i>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800 mb-2">确认删除</h2>
+            <p class="text-sm text-slate-500 mb-2">确定要删除员工 <span id="deleteTargetName" class="font-bold text-slate-800"></span> 吗？</p>
+            <p class="text-xs text-slate-400 mb-6">此操作不可撤销</p>
+            <div class="flex gap-3">
+                <button id="deleteCancelBtn" class="flex-1 h-11 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">取消</button>
+                <button id="deleteConfirmBtn" class="flex-1 h-11 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors">删除</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        var API_BASE_URL = getApiBase();
+        var allData = [];
+        var filteredData = [];
+        var currentPage = 1;
+        var pageSize = 10;
+        var currentEditId = null;
+        var pendingDeleteId = null;
+
+        function getStatusInfo(status) {
+            if (status === '在职') return { className: 'h-6 px-2.5 inline-flex items-center justify-center bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full' };
+            if (status === '试用') return { className: 'h-6 px-2.5 inline-flex items-center justify-center bg-amber-100 text-amber-800 text-xs font-bold rounded-full' };
+            if (status === '已离职') return { className: 'h-6 px-2.5 inline-flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-bold rounded-full' };
+            return { className: 'h-6 px-2.5 inline-flex items-center justify-center bg-slate-100 text-slate-600 text-xs font-bold rounded-full' };
+        }
+
+        function renderTable() {
+            var start = (currentPage - 1) * pageSize;
+            var pageData = filteredData.slice(start, start + pageSize);
+            var tbody = document.getElementById('tableBody');
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<div class="min-h-[72px] py-10 px-6 flex items-center justify-center text-slate-400 text-sm">暂无数据</div>';
+                updatePagination();
+                return;
+            }
+
+            tbody.innerHTML = pageData.map(function(item) {
+                var statusInfo = getStatusInfo(item.status || item.employee_status || '在职');
+                return '<div class="min-h-[72px] py-3 px-6 border-b border-slate-100 flex items-center hover:bg-slate-50/50 transition-colors relative group">' +
+                    '<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>' +
+                    '<div class="w-28 shrink-0 text-sm font-medium text-slate-600 truncate">' + (item.employeeId || '--') + '</div>' +
+                    '<div class="w-32 shrink-0 text-sm text-slate-800 font-medium truncate">' + (item.name || '--') + '</div>' +
+                    '<div class="w-36 flex-1 min-w-36 text-sm text-slate-600 truncate">' + (item.department || '--') + '</div>' +
+                    '<div class="w-28 shrink-0 text-sm text-slate-500 truncate">' + (item.entryDate || item.entry_date || '--') + '</div>' +
+                    '<div class="w-20 shrink-0 flex items-center">' +
+                        '<div class="' + statusInfo.className + '">' + (item.status || item.employee_status || '在职') + '</div>' +
+                    '</div>' +
+                    '<div class="w-28 shrink-0 flex justify-end gap-3">' +
+                        '<button class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" data-action="edit" data-employee-id="' + (item.employeeId || '') + '" title="编辑信息">' +
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>' +
+                        '</button>' +
+                        '<button class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" data-action="delete" data-employee-id="' + (item.employeeId || '') + '" data-employee-name="' + (item.name || '').replace(/"/g, '&quot;') + '" title="删除员工">' +
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            var totalPages = Math.ceil(filteredData.length / pageSize);
+            if (totalPages < 1) totalPages = 1;
+            var start = filteredData.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+            var end = Math.min(currentPage * pageSize, filteredData.length);
+
+            document.getElementById('paginationInfo').textContent = '共 ' + filteredData.length + ' 条记录，当前显示 ' + start + '-' + end + ' 条';
+            document.getElementById('totalCountText').textContent = '共管理 ' + filteredData.length + ' 名员工档案';
+
+            var btnsHtml = '';
+            btnsHtml += '<button class="w-8 h-8 border border-slate-200 rounded flex justify-center items-center text-slate-400 hover:bg-white transition-all" onclick="goPage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed"' : '') + '><i class="fas fa-chevron-left text-xs"></i></button>';
+
+            var maxVisible = 5;
+            var startPage = Math.max(1, currentPage - 2);
+            var endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            for (var i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    btnsHtml += '<button class="w-8 h-8 border border-primary bg-primary text-white rounded flex justify-center items-center text-sm font-medium">' + i + '</button>';
+                } else {
+                    btnsHtml += '<button class="w-8 h-8 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex justify-center items-center text-sm font-medium" onclick="goPage(' + i + ')">' + i + '</button>';
+                }
+            }
+
+            if (endPage < totalPages) {
+                btnsHtml += '<span class="text-slate-400">...</span>';
+                btnsHtml += '<button class="w-8 h-8 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded flex justify-center items-center text-sm font-medium" onclick="goPage(' + totalPages + ')">' + totalPages + '</button>';
+            }
+
+            btnsHtml += '<button class="w-8 h-8 border border-slate-200 rounded flex justify-center items-center text-slate-600 hover:bg-white transition-all" onclick="goPage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed"' : '') + '><i class="fas fa-chevron-right text-xs"></i></button>';
+
+            document.getElementById('paginationBtns').innerHTML = btnsHtml;
+        }
+
+        function goPage(page) {
+            var totalPages = Math.ceil(filteredData.length / pageSize);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+        }
+
+        function applyFilter() {
+            var keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!keyword) {
+                filteredData = allData.slice();
+            } else {
+                filteredData = allData.filter(function(item) {
+                    return (item.name || '').toLowerCase().indexOf(keyword) !== -1 || (item.employeeId || '').toLowerCase().indexOf(keyword) !== -1;
+                });
+            }
+            currentPage = 1;
+            renderTable();
+        }
+
+        function resetDialog() {
+            currentEditId = null;
+            document.getElementById('dialogTitle').textContent = '新增员工';
+            document.getElementById('editName').value = '';
+            document.getElementById('editEmployeeId').value = '';
+            document.getElementById('editDepartment').value = '';
+            document.getElementById('editPosition').value = '';
+            document.getElementById('editStatus').value = '在职';
+        }
+
+        function openEditDialog(employeeId) {
+            var item = null;
+            for (var i = 0; i < allData.length; i++) {
+                if (allData[i].employeeId === employeeId || allData[i].employee_id === employeeId) {
+                    item = allData[i];
+                    break;
+                }
+            }
+            if (!item) return;
+
+            currentEditId = employeeId;
+            document.getElementById('dialogTitle').textContent = '编辑员工信息';
+            document.getElementById('editName').value = item.name || '';
+            document.getElementById('editEmployeeId').value = item.employeeId || '';
+            document.getElementById('editDepartment').value = item.department || '';
+            document.getElementById('editPosition').value = item.position || '';
+            document.getElementById('editStatus').value = item.status || item.employee_status || '在职';
+            document.getElementById('editDialog').showModal();
+        }
+
+        function openDeleteDialog(employeeId, name) {
+            pendingDeleteId = employeeId;
+            document.getElementById('deleteTargetName').textContent = name;
+            document.getElementById('deleteDialog').showModal();
+        }
+
+        async function saveEmployee() {
+            var name = document.getElementById('editName').value.trim();
+            var employeeId = document.getElementById('editEmployeeId').value.trim();
+            var department = document.getElementById('editDepartment').value;
+            var position = document.getElementById('editPosition').value.trim();
+            var status = document.getElementById('editStatus').value;
+
+            if (!name || !employeeId) {
+                alert('姓名和工号不能为空');
+                return;
+            }
+
+            var isEdit = currentEditId !== null;
+            var url = isEdit ? API_BASE_URL + '/api/employee/update' : API_BASE_URL + '/api/employee/create';
+            var method = 'POST';
+
+            try {
+                var body = { name: name, employeeId: employeeId, department: department, position: position, status: status };
+                if (isEdit) {
+                    body.originalEmployeeId = currentEditId;
+                }
+
+                var response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                var result = await response.json();
+
+                if (result.code === 200 || result.success) {
+                    document.getElementById('editDialog').close();
+                    resetDialog();
+                    await loadEmployeeData();
+                } else {
+                    alert(result.message || '操作失败');
+                }
+            } catch (error) {
+                console.error('保存员工失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        async function confirmDelete() {
+            if (!pendingDeleteId) return;
+
+            try {
+                var response = await fetch(API_BASE_URL + '/api/employee/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: pendingDeleteId })
+                });
+                var result = await response.json();
+
+                if (result.code === 200 || result.success) {
+                    document.getElementById('deleteDialog').close();
+                    pendingDeleteId = null;
+                    await loadEmployeeData();
+                } else {
+                    alert(result.message || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除员工失败:', error);
+                alert('网络错误，请稍后重试');
+            }
+        }
+
+        async function loadEmployeeData() {
+            try {
+                var response = await fetch(API_BASE_URL + '/api/employee/list');
+                var result = await response.json();
+                var data = result.data || result;
+                if (Array.isArray(data)) {
+                    allData = data;
+                } else if (data && data.list) {
+                    allData = data.list;
+                } else {
+                    allData = [];
+                }
+            } catch (error) {
+                console.error('加载员工数据失败:', error);
+                allData = [];
+            }
+
+            filteredData = allData.slice();
+            currentPage = 1;
+            renderTable();
+        }
+
+        document.getElementById('dialogCancelBtn').addEventListener('click', function() {
+            document.getElementById('editDialog').close();
+            resetDialog();
+        });
+
+        document.getElementById('dialogSaveBtn').addEventListener('click', saveEmployee);
+
+        document.getElementById('deleteCancelBtn').addEventListener('click', function() {
+            document.getElementById('deleteDialog').close();
+            pendingDeleteId = null;
+        });
+
+        document.getElementById('deleteConfirmBtn').addEventListener('click', confirmDelete);
+
+        document.getElementById('editDialog').addEventListener('click', function(e) {
+            if (e.target === this) this.close();
+        });
+
+        document.getElementById('deleteDialog').addEventListener('click', function(e) {
+            if (e.target === this) this.close();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', applyFilter);
+
+        document.getElementById('tableBody').addEventListener('click', function(e) {
+            var btn = e.target.closest('button');
+            if (!btn) return;
+            e.stopPropagation();
+            var action = btn.getAttribute('data-action');
+            var employeeId = btn.getAttribute('data-employee-id');
+            if (action === 'edit') {
+                openEditDialog(employeeId);
+            } else if (action === 'delete') {
+                var name = btn.getAttribute('data-employee-name');
+                openDeleteDialog(employeeId, name);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadEmployeeData);
+
+        document.getElementById('logoBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('logo-menu').classList.toggle('active');
+        });
+        document.addEventListener('click', function(e) {
+            var menu = document.getElementById('logo-menu');
+            if (menu.classList.contains('active') && !document.getElementById('logoWrapper').contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
