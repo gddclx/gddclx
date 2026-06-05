@@ -10,7 +10,7 @@ spring.cloud.nacos.config.file-extension=properties
 spring.cloud.nacos.discovery.server-addr=localhost:8848
 spring.cloud.nacos.discovery.namespace=public
 
-spring.cloud.nacos.username=nacos
-spring.cloud.nacos.password=nacos
+spring.cloud.nacos.username=${NACOS_USERNAME:nacos}
+spring.cloud.nacos.password=${NACOS_PASSWORD:}
 
 spring.profiles.active=dev
