@@ -173,7 +173,7 @@
                         </div>
                     </div>
                 </div>
-                <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="window.location.href='员工首页.html'">logo</h1>
+                <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="goHome()">logo</h1>
             </div>
         </header>
 
@@ -191,6 +191,12 @@
                         <i class="fas fa-clock text-5xl text-white drop-shadow-md"></i>
                         <span class="text-2xl font-bold tracking-tight text-white drop-shadow-md" id="btn-text">快速打卡</span>
                         <span class="text-sm font-medium text-primary-50 bg-black/10 px-3 py-1 rounded-full backdrop-blur-sm" id="btn-time">--:-- --</span>
+                    </button>
+
+                    <!-- 签退按钮 -->
+                    <button id="checkout-btn" class="group relative w-40 h-40 rounded-full bg-gradient-to-br from-orange-400 to-red-500 shadow-2xl shadow-red-500/30 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-95 border-4 border-white/20" style="display:none;">
+                        <i class="fas fa-sign-out-alt text-3xl text-white drop-shadow-md"></i>
+                        <span class="text-lg font-bold text-white drop-shadow-md" id="checkout-btn-text">签退</span>
                     </button>
 
                     <!-- 今日打卡统计 -->
@@ -320,6 +326,7 @@
 
     <script>
         const API_BASE_URL = getApiBase();
+        function goHome(){try{var u=JSON.parse(localStorage.getItem('userInfo'));window.location.href=u&&u.role==='admin'?'首页.html':'员工首页.html';}catch(e){window.location.href='员工首页.html';}}
 
         function getCurrentUserId() {
             const userInfo = localStorage.getItem('userInfo');
@@ -368,6 +375,21 @@
                     const checkinTime = data.checkinTime || data.time || '--:-- --';
                     disableCheckinButton();
                     document.getElementById('btn-time').textContent = checkinTime;
+
+                    // Show checkout button if not yet checked out
+                    const checkoutBtn = document.getElementById('checkout-btn');
+                    const checkoutText = document.getElementById('checkout-btn-text');
+                    if (data.checkoutTime) {
+                        checkoutBtn.style.display = 'flex';
+                        checkoutBtn.classList.add('opacity-50');
+                        checkoutBtn.disabled = true;
+                        checkoutText.textContent = '已签退';
+                    } else {
+                        checkoutBtn.style.display = 'flex';
+                        checkoutBtn.classList.remove('opacity-50');
+                        checkoutBtn.disabled = false;
+                        checkoutText.textContent = '签退';
+                    }
                 } else {
                     console.log('用户今日未打卡');
                 }
@@ -442,6 +464,44 @@
             btn.classList.remove('animate-pulse-glow');
             btn.classList.add('btn-disabled');
             document.getElementById('btn-text').textContent = '已打卡';
+            // Show checkout button after checkin
+            document.getElementById('checkout-btn').style.display = 'flex';
+        }
+
+        async function handleCheckout() {
+            const userId = getCurrentUserId();
+            const btn = document.getElementById('checkout-btn');
+            const btnText = document.getElementById('checkout-btn-text');
+            btnText.textContent = '签退中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId })
+                });
+                const result = await response.json();
+
+                if (result.code === 200 || result.success) {
+                    const data = result.data;
+                    let msg = '签退成功';
+                    if (data.late) msg += ' (迟到)';
+                    if (data.early) msg += ' (早退)';
+                    showSuccessToast(data.checkoutTime || formatTime(new Date()));
+                    btnText.textContent = '已签退';
+                    btn.classList.add('opacity-50');
+                } else {
+                    showErrorToast(result.message || '签退失败');
+                    btnText.textContent = '签退';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('签退请求失败:', error);
+                showErrorToast('网络错误，请稍后重试');
+                btnText.textContent = '签退';
+                btn.disabled = false;
+            }
         }
 
         function showSuccessToast(time) {
@@ -586,6 +646,7 @@
         }
 
         document.getElementById('checkin-btn').addEventListener('click', handleCheckin);
+        document.getElementById('checkout-btn').addEventListener('click', handleCheckout);
         document.addEventListener('DOMContentLoaded', init);
 
         document.getElementById('logoBtn').addEventListener('click', function(e) {

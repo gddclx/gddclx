@@ -2,6 +2,7 @@ package com.example.demo.service.impl;
 
 import com.example.demo.domain.Attendance;
 import com.example.demo.dto.CheckinResponse;
+import com.example.demo.dto.CheckoutResponse;
 import com.example.demo.dto.CompanyAttendanceResponse;
 import com.example.demo.dto.MonthAttendanceResponse;
 import com.example.demo.dto.TodayStatusResponse;
@@ -45,6 +46,45 @@ public class AttendanceServiceImpl implements AttendanceService {
       }
    }
 
+   public CheckoutResponse checkout(String userId) {
+      Date now = new Date();
+      String todayStr = DATE_FORMAT.format(now);
+
+      Attendance exist = this.attendanceMapper.selectByEmployeeIdAndDateStr(userId, todayStr);
+      if (exist == null) {
+         return new CheckoutResponse(false, "今日未签到，无法签退", null, false, false);
+      }
+
+      if (exist.getCheckoutTime() != null) {
+         return new CheckoutResponse(false, "今日已签退，请勿重复签退",
+                 TIME_FORMAT.format(exist.getCheckoutTime()), false, false);
+      }
+
+      // Judge late: checkin after 9:00
+      Calendar cal = Calendar.getInstance();
+      cal.setTime(exist.getCheckinTime());
+      int checkinHour = cal.get(Calendar.HOUR_OF_DAY);
+      int checkinMinute = cal.get(Calendar.MINUTE);
+      boolean isLate = (checkinHour > 9) || (checkinHour == 9 && checkinMinute > 0);
+
+      // Judge early: checkout before 17:00
+      cal.setTime(now);
+      int checkoutHour = cal.get(Calendar.HOUR_OF_DAY);
+      boolean isEarly = (checkoutHour < 17);
+
+      int lateVal = isLate ? 1 : 0;
+      int earlyVal = isEarly ? 1 : 0;
+
+      this.attendanceMapper.updateCheckout(userId, lateVal, earlyVal);
+
+      String status = "";
+      if (isLate && isEarly) status = " (迟到+早退)";
+      else if (isLate) status = " (迟到)";
+      else if (isEarly) status = " (早退)";
+
+      return new CheckoutResponse(true, "签退成功" + status, TIME_FORMAT.format(now), isLate, isEarly);
+   }
+
    public CompanyAttendanceResponse getCompanyTodayAttendance() {
       String todayStr = DATE_FORMAT.format(new Date());
       int checkedCount = this.attendanceMapper.countTodayCheckinStr(todayStr);
@@ -58,7 +98,8 @@ public class AttendanceServiceImpl implements AttendanceService {
       Attendance exist = this.attendanceMapper.selectByEmployeeIdAndDateStr(userId, todayStr);
       if (exist != null) {
          String checkinTimeStr = TIME_FORMAT.format(exist.getCheckinTime());
-         return new TodayStatusResponse(true, checkinTimeStr, checkinTimeStr);
+         String checkoutTimeStr = exist.getCheckoutTime() != null ? TIME_FORMAT.format(exist.getCheckoutTime()) : null;
+         return new TodayStatusResponse(true, checkinTimeStr, checkoutTimeStr);
       } else {
          return new TodayStatusResponse(false, (String)null, (String)null);
       }

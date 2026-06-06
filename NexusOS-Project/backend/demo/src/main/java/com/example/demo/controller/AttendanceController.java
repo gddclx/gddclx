@@ -2,6 +2,8 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.CheckinRequest;
 import com.example.demo.dto.CheckinResponse;
+import com.example.demo.dto.CheckoutRequest;
+import com.example.demo.dto.CheckoutResponse;
 import com.example.demo.dto.CompanyAttendanceResponse;
 import com.example.demo.dto.MonthAttendanceResponse;
 import com.example.demo.dto.TodayStatusResponse;
@@ -47,6 +49,33 @@ public class AttendanceController {
          result.put("code", 500);
          result.put("success", false);
          result.put("message", "打卡异常: " + e.getMessage());
+      }
+
+      return result;
+   }
+
+   @PostMapping({"/checkout"})
+   public Map<String, Object> checkout(@RequestBody CheckoutRequest request) {
+      Map<String, Object> result = new HashMap();
+
+      try {
+         if (request.getUserId() == null || request.getUserId().isEmpty()) {
+            result.put("code", 400);
+            result.put("success", false);
+            result.put("message", "员工ID不能为空");
+            return result;
+         }
+
+         CheckoutResponse response = this.attendanceService.checkout(request.getUserId());
+         result.put("code", response.isSuccess() ? 200 : 400);
+         result.put("success", response.isSuccess());
+         result.put("message", response.getMessage());
+         result.put("data", response);
+      } catch (Exception var4) {
+         Exception e = var4;
+         result.put("code", 500);
+         result.put("success", false);
+         result.put("message", "签退异常: " + e.getMessage());
       }
 
       return result;

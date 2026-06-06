@@ -115,7 +115,7 @@
                         </div>
                     </div>
                 </div>
-                <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="window.location.href='绩效.html'">logo</h1>
+                <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="goHome()">logo</h1>
             </div>
 
             
@@ -155,12 +155,17 @@
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">绩效等级</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">绩效得分</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">提成金额</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">应发金额</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">迟到</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">早退</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">扣款</th>
                             <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">状态</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">操作</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100">
                         <tr>
-                            <td colspan="6" class="px-6 py-20 text-center text-slate-400">
+                            <td colspan="11" class="px-6 py-20 text-center text-slate-400">
                                 <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>
                                 <p class="text-sm">正在加载数据...</p>
                             </td>
@@ -177,6 +182,7 @@
 
     <script>
         var API_BASE_URL = getApiBase();
+        function goHome(){try{var u=JSON.parse(localStorage.getItem('userInfo'));window.location.href=u&&u.role==='admin'?'首页.html':'员工首页.html';}catch(e){window.location.href='员工首页.html';}}
         var allData = [];
         var filteredData = [];
         var currentPage = 1;
@@ -213,7 +219,7 @@
             var tbody = document.getElementById('tableBody');
 
             if (pageData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-20 text-center text-slate-400"><p class="text-sm">暂无数据</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="px-6 py-20 text-center text-slate-400"><p class="text-sm">暂无数据</p></td></tr>';
                 return;
             }
 
@@ -245,10 +251,22 @@
                     '<td class="px-6 py-5 text-right">' +
                         '<p class="text-sm font-bold text-primary">' + formatMoney(item.commissionAmount) + '</p>' +
                     '</td>' +
+                    '<td class="px-6 py-5 text-right">' +
+                        '<p class="text-sm font-bold text-emerald-600">' + formatMoney((parseFloat(item.commissionAmount) || 0) - (parseInt(item.salaryDeduct) || 0)) + '</p>' +
+                    '</td>' +
+                    '<td class="px-6 py-5 text-center text-sm">' + (item.lateCount || 0) + '</td>' +
+                    '<td class="px-6 py-5 text-center text-sm">' + (item.earlyCount || 0) + '</td>' +
+                    '<td class="px-6 py-5 text-center text-sm font-bold text-red-500">¥' + (item.salaryDeduct || 0) + '</td>' +
                     '<td class="px-6 py-5 text-center">' +
                         '<span class="inline-flex items-center gap-1.5 text-xs ' + status.textColor + ' font-medium">' +
                             '<span class="w-2 h-2 rounded-full ' + status.dot + '"></span>' + status.label +
                         '</span>' +
+                    '</td>' +
+                    '<td class="px-6 py-5 text-center">' +
+                        '<button onclick="confirmLate(\'' + item.employeeId + '\')" class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 mr-1">确认迟到</button>' +
+                        '<button onclick="confirmEarly(\'' + item.employeeId + '\')" class="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded hover:bg-orange-200 mr-1">确认早退</button>' +
+                        '<button onclick="forgiveLate(\'' + item.employeeId + '\')" class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 mr-1">赦免迟到</button>' +
+                        '<button onclick="forgiveEarly(\'' + item.employeeId + '\')" class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200">赦免早退</button>' +
                     '</td>' +
                 '</tr>';
             }).join('');
@@ -317,7 +335,9 @@
             var totalAmount = 0;
             var staffCount = 0;
             allData.forEach(function(item) {
-                totalAmount += parseFloat(item.commissionAmount) || 0;
+                // 提成金额 - 扣款 = 实发金额
+                var net = (parseFloat(item.commissionAmount) || 0) - (parseInt(item.salaryDeduct) || 0);
+                totalAmount += net;
                 if (item.position && item.position.trim() && item.position.trim() !== '无') {
                     staffCount++;
                 }
@@ -347,6 +367,58 @@
             currentPage = 1;
             updateHeaderStats();
             renderTable();
+        }
+
+        async function confirmLate(employeeId) {
+            if (!confirm('确认该员工迟到？将扣款50元。')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/performance/confirm-late`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: employeeId, type: 'late' })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) { loadPerformanceData(); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        async function confirmEarly(employeeId) {
+            if (!confirm('确认该员工早退？将扣款50元。')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/performance/confirm-early`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: employeeId, type: 'early' })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) { loadPerformanceData(); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        async function forgiveLate(employeeId) {
+            if (!confirm('确定赦免该员工的迟到记录？扣款将撤销。')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/performance/forgive-late`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: employeeId })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) { loadPerformanceData(); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        async function forgiveEarly(employeeId) {
+            if (!confirm('确定赦免该员工的早退记录？扣款将撤销。')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/performance/forgive-early`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: employeeId })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (data.success) { loadPerformanceData(); }
+            } catch (e) { alert('操作失败'); }
         }
 
         document.getElementById('searchInput').addEventListener('input', applyFilter);

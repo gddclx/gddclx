@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.CheckinResponse;
+import com.example.demo.dto.CheckoutResponse;
 import com.example.demo.dto.CompanyAttendanceResponse;
 import com.example.demo.dto.MonthAttendanceResponse;
 import com.example.demo.dto.TodayStatusResponse;
@@ -8,6 +9,8 @@ import com.example.demo.dto.WeekAttendanceResponse;
 
 public interface AttendanceService {
    CheckinResponse checkin(String var1);
+
+   CheckoutResponse checkout(String userId);
 
    CompanyAttendanceResponse getCompanyTodayAttendance();
 

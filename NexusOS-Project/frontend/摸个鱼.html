@@ -949,6 +949,10 @@
             loadSignStatus();
             loadBankStatus();
             loadRank();
+            // 每30秒自动刷新金币状态（后台挂机）
+            setInterval(function() {
+                loadGameStatus();
+            }, 30000);
         });
     </script>
 </body>

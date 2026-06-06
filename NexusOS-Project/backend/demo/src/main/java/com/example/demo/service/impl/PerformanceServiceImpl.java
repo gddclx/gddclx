@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PerformanceServiceImpl implements PerformanceService {
@@ -74,7 +75,44 @@ public class PerformanceServiceImpl implements PerformanceService {
          commissionAmount = BigDecimal.ZERO;
       }
 
-      return new PerformanceResponse(emp.getName(), employeeId, positionName, departmentName, performanceScore, commissionAmount);
+      // Late / early / deduction stats
+      int lateCount = 0;
+      int earlyCount = 0;
+      int salaryDeduct = 0;
+      Map<String, Object> stats = this.attendanceMapper.countTotalLateEarlyByEmployeeId(employeeId);
+      if (stats != null) {
+         if (stats.get("totalLate") != null) lateCount = ((Number) stats.get("totalLate")).intValue();
+         if (stats.get("totalEarly") != null) earlyCount = ((Number) stats.get("totalEarly")).intValue();
+         if (stats.get("totalDeduct") != null) salaryDeduct = ((Number) stats.get("totalDeduct")).intValue();
+      }
+
+      return new PerformanceResponse(emp.getName(), employeeId, positionName, departmentName,
+              performanceScore, commissionAmount, lateCount, earlyCount, salaryDeduct);
+   }
+
+   @Transactional
+   public int confirmLate(String employeeId) {
+      return this.attendanceMapper.confirmLate(employeeId);
+   }
+
+   @Transactional
+   public int confirmEarly(String employeeId) {
+      return this.attendanceMapper.confirmEarly(employeeId);
+   }
+
+   @Transactional
+   public int forgiveLate(String employeeId) {
+      return this.attendanceMapper.forgiveLate(employeeId);
+   }
+
+   @Transactional
+   public int forgiveEarly(String employeeId) {
+      return this.attendanceMapper.forgiveEarly(employeeId);
+   }
+
+   @Transactional
+   public void autoMarkEarlyLeave() {
+      this.attendanceMapper.autoMarkEarlyLeave();
    }
 
    private double calculateAttendanceRate(String employeeId, Date hireDate) {

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusOS - 提交成果</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#4F46E5',secondary:'#10B981','primary-50':'#eff6ff','primary-100':'#dbeafe','primary-500':'#4F46E5','primary-600':'#3730a3','nexus-dark':'#0a1128'},borderRadius:{none:'0px',sm:'2px',DEFAULT:'4px',md:'8px',lg:'12px',xl:'16px','2xl':'20px','3xl':'24px',full:'9999px',button:'8px'},fontFamily:{sans:['Inter','-apple-system','BlinkMacSystemFont',"Segoe UI",'Roboto',"Helvetica Neue",'Arial','sans-serif'],pacifico:['Pacifico','serif']}}}}</script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="config.js"></script>
+    <style>
+        body{background-color:#f6f9fc;background-image:radial-gradient(at 0% 0%,rgba(79,70,229,0.1) 0px,transparent 50%),radial-gradient(at 100% 100%,rgba(16,185,129,0.1) 0px,transparent 50%);background-attachment:fixed;}
+        .glass-card{background-color:rgba(255,255,255,0.7);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.4);box-shadow:0 1px 2px 0 rgba(0,0,0,0.05);border-radius:24px;transition:all 300ms cubic-bezier(0.22,1,0.36,1);}
+        .interactive-element{transition:all 300ms cubic-bezier(0.22,1,0.36,1);}
+        .interactive-element:hover{transform:scale(1.05);}
+        #logo-menu{position:absolute;top:calc(100% + 8px);left:0;margin:0;opacity:0;pointer-events:none;transform:translateY(-10px) scale(0.95);transition:all 0.3s cubic-bezier(0.22,1,0.36,1);z-index:50;}
+        #logo-menu.active{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
+        .btn-primary{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;padding:0.5rem 1.25rem;border-radius:0.5rem;font-weight:600;border:none;cursor:pointer;transition:all 0.2s;}
+        .btn-primary:hover{transform:scale(1.02);box-shadow:0 4px 12px rgba(99,102,241,0.4);}
+        .badge{display:inline-flex;align-items:center;padding:0.125rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:600;}
+    </style>
+</head>
+<body class="text-slate-800 font-sans p-4 md:p-8 flex flex-col gap-8">
+    <header class="flex justify-between items-center w-full max-w-3xl mx-auto">
+        <div class="flex items-center gap-3">
+            <div class="relative" id="logoWrapper">
+                <button id="logoBtn" class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md flex items-center justify-center interactive-element cursor-pointer">
+                    <i class="fas fa-layer-group text-white text-lg flex justify-center items-center"></i>
+                </button>
+                <div id="logo-menu" class="glass-card w-48 p-2 bg-white/95 border-slate-200 m-0 shadow-xl rounded-xl">
+                    <div class="py-2 flex flex-col gap-1">
+                        <a href="javascript:history.back()" class="px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors flex items-center gap-2"><i class="fas fa-arrow-left w-4"></i> 回到上一页</a>
+                        <a href="登录.html" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"><i class="fas fa-sign-out-alt w-4"></i> 退出登录</a>
+                    </div>
+                </div>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="goHome()">logo</h1>
+        </div>
+    </header>
+
+    <main class="w-full max-w-3xl mx-auto flex flex-col gap-6" id="mainContent">
+        <div class="text-center py-20 text-slate-400"><i class="fas fa-spinner fa-spin text-3xl mb-4 block"></i>加载中...</div>
+    </main>
+
+    <script>
+        const API = getApiBase();
+        const params = new URLSearchParams(location.search);
+        const taskId = params.get('taskId');
+        let currentUser = null;
+        let mySubmission = null;
+
+        function goHome(){
+            try{var u=JSON.parse(localStorage.getItem('userInfo'));window.location.href=u&&u.role==='admin'?'首页.html':'员工首页.html';}catch(e){window.location.href='员工首页.html';}
+        }
+        function getUser() {
+            if (currentUser) return currentUser;
+            try{currentUser=JSON.parse(localStorage.getItem('userInfo'));}catch(e){}
+            if(!currentUser)currentUser={employeeId:localStorage.getItem('userId')||'1',role:'user'};
+            return currentUser;
+        }
+
+        function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+        function toast(msg,color){
+            let el=document.getElementById('toast');
+            if(!el){el=document.createElement('div');el.id='toast';el.className='fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg transition-all duration-300';el.style.opacity='0';el.style.transform='translateY(-20px)';el.style.pointerEvents='none';document.body.appendChild(el);}
+            el.textContent=msg;el.className='fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg transition-all duration-300';
+            el.classList.add(color==='green'?'bg-emerald-500':color==='red'?'bg-red-500':'bg-slate-700');
+            el.style.opacity='1';el.style.transform='translateY(0)';el.style.pointerEvents='auto';
+            clearTimeout(el._tid);el._tid=setTimeout(function(){el.style.opacity='0';el.style.transform='translateY(-20px)';},2000);
+        }
+
+        async function load() {
+            if(!taskId){document.getElementById('mainContent').innerHTML='<div class="glass-card p-12 text-center"><p class="text-slate-500 text-lg">缺少任务参数</p><a href="任务.html" class="text-indigo-500 mt-4 inline-block">← 返回任务列表</a></div>';return;}
+            const user=getUser();
+            try{
+                const [tRes,sRes]=await Promise.all([
+                    fetch(`${API}/api/task/${taskId}`),
+                    fetch(`${API}/api/task/${taskId}/my-submission?employeeId=${user.employeeId||user.employee_id}`)
+                ]);
+                const tData=await tRes.json();const sData=await sRes.json();
+                const task=tData.data;mySubmission=sData.data;
+                if(!task){document.getElementById('mainContent').innerHTML='<div class="glass-card p-12 text-center"><p class="text-slate-500 text-lg">任务不存在</p></div>';return;}
+                render(task);
+            }catch(e){document.getElementById('mainContent').innerHTML='<div class="glass-card p-12 text-center text-red-500">加载失败</div>';}
+        }
+
+        function render(task){
+            const isClosed=task.status!=='active';
+            const hasSubmitted=mySubmission&&mySubmission.status==='pending';
+            const isApproved=mySubmission&&mySubmission.status==='approved';
+            const isRejected=mySubmission&&mySubmission.status==='rejected';
+            const canSubmit=!isClosed&&!hasSubmitted&&!isApproved;
+
+            let statusHtml='';
+            if(mySubmission){
+                const cls=isApproved?'bg-green-100 text-green-700':isRejected?'bg-red-100 text-red-700':'bg-yellow-100 text-yellow-700';
+                const txt=isApproved?'✅ 已验收':isRejected?'❌ 已打回':'⏳ 待审核';
+                statusHtml=`
+                    <div class="glass-card p-6 mt-4">
+                        <div class="flex justify-between items-center mb-3"><h3 class="font-bold text-slate-700">我的提交</h3><span class="badge ${cls}">${txt}</span></div>
+                        <div class="bg-slate-50 rounded-lg p-4 text-sm whitespace-pre-wrap">${esc(mySubmission.content||'（无文字描述）')}</div>
+                        ${mySubmission.files&&mySubmission.files.length?`<div class="mt-3">${mySubmission.files.map(f=>`<a href="${API}${f.url}" class="text-indigo-500 text-sm mr-3 hover:underline" target="_blank"><i class="fas fa-paperclip"></i> ${esc(f.fileName)}</a>`).join('')}</div>`:''}
+                        ${mySubmission.reviewComment?`<div class="mt-3 bg-slate-50 rounded-lg p-3 border"><p class="text-xs text-slate-500 mb-1">管理员评语：</p><p class="text-sm text-slate-700">${esc(mySubmission.reviewComment)}</p></div>`:''}
+                    </div>`;
+            }
+
+            let formHtml='';
+            if(canSubmit){
+                formHtml=`
+                <div class="glass-card p-6 mt-4" id="submitForm">
+                    <h3 class="font-bold text-slate-700 mb-4">📤 ${isRejected?'重新提交（上次被打回）':'提交成果'}</h3>
+                    <textarea id="submitContent" rows="5" placeholder="描述你的工作成果..." class="w-full px-3 py-3 border rounded-lg mb-3">${isRejected&&mySubmission?esc(mySubmission.content):''}</textarea>
+                    <div class="mb-4"><p class="text-xs text-slate-500 mb-1">附件（文件、截图等）</p><input id="submitFiles" type="file" multiple class="w-full px-3 py-2 border rounded-lg"></div>
+                    <button onclick="doSubmit(${task.id})" class="btn-primary"><i class="fas fa-paper-plane mr-1"></i>${isRejected?'重新提交':'提交成果'}</button>
+                    <span id="submitTip" class="text-xs text-slate-400 ml-3"></span>
+                </div>`;
+            }
+
+            document.getElementById('mainContent').innerHTML=`
+                <a href="任务.html" class="text-indigo-500 text-sm hover:underline mb-2 inline-block"><i class="fas fa-arrow-left mr-1"></i>返回任务列表</a>
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold mb-2">${esc(task.title)}</h2>
+                    <div class="flex flex-wrap gap-3 text-xs text-slate-500 mb-4">
+                        <span>发布者：${esc(task.publisherId)}</span><span>${task.createdAt?task.createdAt.substring(0,10):''}</span>
+                        ${task.deadline?`<span class="text-orange-500 font-medium">截止：${task.deadline}</span>`:''}
+                        <span class="badge ${isClosed?'bg-slate-100 text-slate-500':'bg-green-100 text-green-700'}">${isClosed?'已关闭':'进行中'}</span>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-4 text-sm whitespace-pre-wrap">${esc(task.content||'（无任务描述）')}</div>
+                    ${task.files&&task.files.length?`<div class="mt-4"><p class="font-bold text-sm mb-2">📎 任务附件</p>${task.files.map(f=>`<a href="${API}${f.url}" class="block text-indigo-500 text-sm mb-1 hover:underline" target="_blank"><i class="fas fa-download mr-1"></i>${esc(f.fileName)} (${(f.fileSize/1024).toFixed(1)}KB)</a>`).join('')}</div>`:''}
+                </div>
+                ${statusHtml}
+                ${formHtml}
+                ${isClosed&&!mySubmission?`<div class="glass-card p-6 text-center text-slate-400 mt-4">该任务已关闭</div>`:''}
+            `;
+        }
+
+        async function doSubmit(taskId){
+            const u=getUser();
+            const fd=new FormData();
+            fd.append('taskId',taskId);
+            fd.append('employeeId',u.employeeId||u.employee_id);
+            fd.append('content',document.getElementById('submitContent').value);
+            for(let f of document.getElementById('submitFiles').files)fd.append('files',f);
+            try{
+                const r=await fetch(`${API}/api/task/submit`,{method:'POST',body:fd});
+                const d=await r.json();
+                if(d.success){toast('提交成功！','green');setTimeout(()=>load(),500);}
+                else toast(d.message,'red');
+            }catch(e){toast('提交失败','red');}
+        }
+
+        document.addEventListener('DOMContentLoaded',()=>{
+            load();
+            document.getElementById('logoBtn').addEventListener('click',function(e){e.stopPropagation();document.getElementById('logo-menu').classList.toggle('active');});
+            document.addEventListener('click',function(e){const m=document.getElementById('logo-menu');if(m.classList.contains('active')&&!document.getElementById('logoWrapper').contains(e.target))m.classList.remove('active');});
+        });
+    </script>
+</body>
+</html>

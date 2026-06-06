@@ -92,7 +92,7 @@ body {
                 </div>
             </div>
         </div>
-        <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="window.location.href='岗位.html'">logo</h1>
+        <h1 class="text-2xl font-bold tracking-tighter text-nexus-dark font-pacifico cursor-pointer" onclick="goHome()">logo</h1>
     </div>
     <div>
         <h2 class="text-2xl font-bold tracking-tighter text-nexus-dark">岗位管理</h2>
@@ -251,6 +251,7 @@ body {
 
 <script>
 var API_BASE = getApiBase() + '/api';
+function goHome(){try{var u=JSON.parse(localStorage.getItem('userInfo'));window.location.href=u&&u.role==='admin'?'首页.html':'员工首页.html';}catch(e){window.location.href='员工首页.html';}}
 var PAGE_SIZE = 10;
 var currentPage = 1;
 var searchQuery = '';
