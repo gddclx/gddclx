@@ -1,0 +1,60 @@
+# ============================================
+# GDDCLX 项目 .gitignore
+# ============================================
+
+# === 敏感配置文件（包含密码/密钥，仅本地保留） ===
+**/application.properties
+**/bootstrap.properties
+
+# === 构建产物 ===
+**/target/
+*.class
+*.jar
+*.war
+
+# === 上传文件（用户数据，不纳入版本控制） ===
+uploads/
+
+# === 日志 ===
+*.log
+logs/
+
+# === Node.js（论文生成脚本依赖） ===
+node_modules/
+package-lock.json
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# === OS ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# === 大型外部工具 ===
+pandoc.exe
+pandoc.zip
+
+# === 数据库导出（含真实数据） ===
+wechat_dump.sql
+*.sql.dump
+
+# === 个人文档 ===
+毕业论文.docx
+generate-thesis.js
+generate-thesis-html.js
+demo.log
+
+# === Nginx（含服务器 IP） ===
+nginx.conf
+
+# === 临时文件 ===
+*.tmp
+*.bak
+.workbuddy/

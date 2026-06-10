@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摸个鱼 - GDDCLX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        'primary-50': '#eff6ff',
+                        'primary-100': '#dbeafe',
+                        'primary-500': '#3b82f6',
+                        'primary-600': '#2563eb',
+                        'primary-900': '#1e3a8a',
+                        'gddclx-dark': '#0a1128',
+                        'gddclx-accent': '#059669',
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '2px',
+                        DEFAULT: '4px',
+                        'md': '8px',
+                        'lg': '12px',
+                        'xl': '16px',
+                        '2xl': '20px',
+                        '3xl': '24px',
+                        'full': '9999px',
+                        'button': '4px'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', "Segoe UI", 'Roboto', "Helvetica Neue", 'Arial', 'sans-serif'],
+                        pacifico: ['Pacifico', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://static.mastergo.com/static/ai/resource/html/font-awesome/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .gold-text {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .coin-icon {
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(360deg); }
+        }
+
+        .pulse-glow {
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.6); }
+        }
+
+        .bank-card {
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .bank-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .bank-card.selected {
+            border-color: #fbbf24;
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+        }
+
+        .countdown-timer {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rank-item:nth-child(odd) {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+        }
+
+        .collect-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .collect-btn:not(:disabled) {
+            animation: pulseGlow 1.5s ease-in-out infinite;
+        }
+
+        .toast {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .fish-swim {
+            animation: swim 3s ease-in-out infinite;
+        }
+
+        @keyframes swim {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        .countdown-ring {
+            transform: rotate(-90deg);
+        }
+
+        .countdown-ring circle {
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .sign-btn:not(:disabled) {
+            animation: pulseGlow 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="text-white font-sans p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <div class="relative" id="logoWrapper">
+                    <button id="logoBtn" class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md flex items-center justify-center cursor-pointer transition-transform hover:scale-110">
+                        <i class="fas fa-layer-group text-white text-lg"></i>
+                    </button>
+                    <div id="logo-menu" class="absolute top-full left-0 mt-2 glass-card w-48 p-2 hidden z-50 rounded-xl">
+                        <a href="javascript:history.back()" class="px-4 py-2 text-sm text-slate-300 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2">
+                            <i class="fas fa-arrow-left w-4"></i> 回到上一页
+                        </a>
+                        <a href="登录.html" class="px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2">
+                            <i class="fas fa-sign-out-alt w-4"></i> 退出登录
+                        </a>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-bold text-white cursor-pointer" onclick="window.location.href='员工首页.html'">logo</h1>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="glass-card px-4 py-2 rounded-full flex items-center gap-2">
+                    <i class="fas fa-coins gold-text coin-icon"></i>
+                    <span id="headerCoins" class="gold-text font-bold">--</span>
+                </div>
+                <div class="glass-card px-4 py-2 rounded-full flex items-center gap-2">
+                    <i class="fas fa-star text-yellow-400"></i>
+                    <span id="headerLevel" class="text-yellow-400 font-bold">--级</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                        <i class="fas fa-fish text-white text-xl fish-swim"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">收菜中心</h2>
+                        <p class="text-slate-400 text-sm">每30分钟积累一次金币</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-center mb-6">
+                    <div class="relative">
+                        <svg class="w-32 h-32 countdown-ring">
+                            <circle cx="64" cy="64" r="56" stroke="#334155" stroke-width="8" fill="none"/>
+                            <circle id="countdownRing" cx="64" cy="64" r="56" stroke="#06b6d4" stroke-width="8" fill="none"
+                                stroke-dasharray="352" stroke-dashoffset="0" stroke-linecap="round"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="countdownMin" class="text-4xl font-bold text-cyan-400">--</span>
+                            <span class="text-slate-400 text-sm">分钟</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 rounded-2xl p-4 mb-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-slate-400">已积累</span>
+                        <span class="text-xl font-bold gold-text"><span id="unclaimedCount">--</span> / 3 次</span>
+                    </div>
+                    <div class="w-full bg-slate-700 rounded-full h-3 mb-3">
+                        <div id="unclaimedProgress" class="progress-bar h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center">
+                        <span id="countdown" class="text-sm text-slate-500">加载中...</span>
+                    </div>
+                </div>
+
+                <button id="collectBtn" class="collect-btn w-full py-4 px-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl transition-all hover:scale-105 disabled:hover:scale-100" disabled>
+                    <i class="fas fa-hand-holding-usd mr-2"></i>收菜
+                </button>
+
+                <div class="mt-4 text-center text-slate-500 text-sm">
+                    当前每次收益: <span id="currentIncome" class="gold-text font-bold">100</span> 金币
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                        <i class="fas fa-calendar-check text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">每日签到</h2>
+                        <p class="text-slate-400 text-sm">签到即可获得金币</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 rounded-2xl p-6 mb-6 text-center">
+                    <div class="flex items-center justify-center gap-4 mb-4">
+                        <i class="fas fa-coins gold-text text-3xl coin-icon"></i>
+                        <span class="text-4xl font-bold gold-text">+200</span>
+                        <span class="text-slate-400 text-lg">金币</span>
+                    </div>
+                    <p class="text-slate-500 text-sm mb-4">连续签到天数: <span id="signCount" class="text-amber-400 font-bold">--</span> 天</p>
+                </div>
+
+                <button id="signBtn" class="sign-btn w-full py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl transition-all hover:scale-105">
+                    <i class="fas fa-pen mr-2"></i>立即签到
+                </button>
+
+                <p id="signStatus" class="mt-4 text-center text-slate-500 text-sm">加载中...</p>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <i class="fas fa-arrow-up text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">升级中心</h2>
+                        <p class="text-slate-400 text-sm">提升收菜收益</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800/50 rounded-2xl p-6 mb-6 text-center">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <span class="text-slate-400">当前等级</span>
+                        <span id="levelDisplay" class="text-3xl font-bold text-purple-400">--</span>
+                    </div>
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-slate-400">升级消耗</span>
+                        <span id="upgradeCost" class="text-xl font-bold gold-text">--</span>
+                    </div>
+                </div>
+
+                <button id="upgradeBtn" class="w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl transition-all hover:scale-105">
+                    <i class="fas fa-rocket mr-2"></i>升级
+                </button>
+            </div>
+        </main>
+
+        <div class="glass-card p-6 rounded-3xl mb-6">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-white">今日部门投资</h2>
+                    <p class="text-slate-400 text-sm">选择部门，投入金币赚取收益</p>
+                </div>
+            </div>
+
+            <div id="periodIndicator" class="mb-4 flex items-center justify-center gap-4">
+                <span id="periodAm" class="px-4 py-2 rounded-full text-sm font-medium" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">上午时段 (0-12点)</span>
+                <span id="periodPm" class="px-4 py-2 rounded-full text-sm font-medium bg-slate-700/50 text-slate-400">下午时段 (12-24点)</span>
+            </div>
+
+            <div id="bankArea" class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bank-card bg-slate-800/50 rounded-2xl p-4 cursor-pointer border-2 border-transparent hover:border-amber-500/50" data-option="1" onclick="selectBank(this)">
+                    <div class="text-center">
+                        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-3">
+                            <i class="fas fa-users text-white text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-white">人力部门</h3>
+                        <p class="text-xs text-slate-500 mt-1">???</p>
+                    </div>
+                </div>
+                <div class="bank-card bg-slate-800/50 rounded-2xl p-4 cursor-pointer border-2 border-transparent hover:border-amber-500/50" data-option="2" onclick="selectBank(this)">
+                    <div class="text-center">
+                        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-3">
+                            <i class="fas fa-code text-white text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-white">研发部门</h3>
+                        <p class="text-xs text-slate-500 mt-1">???</p>
+                    </div>
+                </div>
+                <div class="bank-card bg-slate-800/50 rounded-2xl p-4 cursor-pointer border-2 border-transparent hover:border-amber-500/50" data-option="3" onclick="selectBank(this)">
+                    <div class="text-center">
+                        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-3">
+                            <i class="fas fa-chart-line text-white text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-white">销售部门</h3>
+                        <p class="text-xs text-slate-500 mt-1">???</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="investForm" class="hidden bg-slate-800/50 rounded-2xl p-6">
+                <p class="text-center text-slate-400 mb-4">已选择: <span id="selectedDept" class="text-amber-400 font-bold">--</span></p>
+                <div class="flex gap-3 mb-4">
+                    <input type="number" id="investAmount" placeholder="输入投资金额" class="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500">
+                    <button onclick="confirmInvest()" class="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:scale-105 transition-transform">
+                        确认投资
+                    </button>
+                </div>
+                <button onclick="cancelInvest()" class="w-full py-2 text-slate-500 hover:text-slate-300 transition-colors">
+                    取消选择
+                </button>
+            </div>
+
+            <div id="investedStatus" class="hidden bg-emerald-500/20 border border-emerald-500/30 rounded-2xl p-6">
+                <div class="flex justify-center gap-4 mb-4">
+                    <div id="amInvestedBadge" class="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/30 text-green-400 text-sm">
+                        <i class="fas fa-check"></i> 上午已投资
+                    </div>
+                    <div id="pmInvestedBadge" class="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/30 text-green-400 text-sm">
+                        <i class="fas fa-check"></i> 下午已投资
+                    </div>
+                </div>
+                <p class="text-center text-slate-400 text-sm">等待零点揭晓收益...</p>
+            </div>
+
+            <div id="lastInvestmentCard" class="hidden glass-card rounded-2xl p-6 border-l-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-bold text-white">上次投资结果</h3>
+                    <span id="lastInvestmentResultBadge" class="px-3 py-1 rounded-full text-sm font-medium"></span>
+                </div>
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div>
+                        <p class="text-slate-400 text-xs mb-1">投资部门</p>
+                        <p id="lastDept" class="text-white font-medium">--</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs mb-1">时段</p>
+                        <p id="lastPeriod" class="text-white font-medium">--</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs mb-1">投入金额</p>
+                        <p id="lastAmount" class="gold-text font-bold">--</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-400 text-xs mb-1">收益率</p>
+                        <p id="lastRate" class="text-cyan-400 font-bold">--</p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-700/50">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">最终收益</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-white">获得 </span>
+                            <span id="lastResultCoins" class="text-2xl font-bold"></span>
+                            <span class="text-slate-400 text-sm">金币</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="text-slate-400">盈亏情况</span>
+                        <span id="lastProfit" class="text-lg font-bold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settlementResult" class="hidden bg-amber-500/20 border border-amber-500/30 rounded-2xl p-6 mt-4">
+                <p class="text-amber-400 font-bold mb-3 text-center">昨日结算</p>
+                <div id="settlementList">
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-6 rounded-3xl">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center">
+                    <i class="fas fa-trophy text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-white">金币排行榜</h2>
+                    <p class="text-slate-400 text-sm">TOP 10 玩家</p>
+                </div>
+            </div>
+
+            <div id="rankList" class="space-y-2 mb-6">
+                <div class="rank-item flex items-center gap-4 p-3 rounded-xl">
+                    <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">--</div>
+                    <div class="flex-1">
+                        <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-slate-600 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <span class="text-slate-500 text-sm">--</span>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-700/50 pt-4">
+                <div class="flex items-center justify-between p-3 bg-amber-500/10 rounded-xl border border-amber-500/30">
+                    <div class="flex items-center gap-3">
+                        <span id="myRank" class="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white font-bold">--</span>
+                        <span class="text-white font-bold">我</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span id="myRankCoins" class="gold-text font-bold">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="upgradeModal" class="fixed inset-0 modal-overlay hidden items-center justify-center z-50">
+        <div class="glass-card p-8 rounded-3xl max-w-md w-full mx-4">
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mb-4">
+                    <i class="fas fa-arrow-up text-white text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-2">升级确认</h3>
+                <p class="text-slate-400">升级后每次收益 +1 金币</p>
+            </div>
+
+            <div class="bg-slate-800/50 rounded-2xl p-4 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-slate-400">当前等级</span>
+                    <span id="modalCurrentLevel" class="text-purple-400 font-bold">-- 级</span>
+                </div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-slate-400">升级后等级</span>
+                    <span id="modalNewLevel" class="text-amber-400 font-bold">-- 级</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">升级消耗</span>
+                    <span id="modalUpgradeCost" class="gold-text font-bold">-- 金币</span>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="closeUpgradeModal()" class="flex-1 py-3 px-6 bg-slate-700 text-slate-300 font-bold rounded-xl hover:bg-slate-600 transition-colors">
+                    取消
+                </button>
+                <button onclick="doUpgrade()" class="flex-1 py-3 px-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:scale-105 transition-transform">
+                    确认升级
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed top-4 right-4 glass-card px-6 py-3 rounded-xl hidden z-50">
+        <span id="toastMessage" class="text-white"></span>
+    </div>
+
+    <script>
+        const API_BASE = getGameApiBase();
+        let gameStatus = {};
+        let signStatus = {};
+        let selectedOption = null;
+        let countdownInterval = null;
+        const CIRCUMFERENCE = 352;
+        const TOTAL_MINUTES = 30;
+
+        function getUserInfo() {
+            try {
+                const userInfo = localStorage.getItem('userInfo');
+                if (userInfo) {
+                    return JSON.parse(userInfo);
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function checkLogin() {
+            const user = getUserInfo();
+            if (!user) {
+                showToast('请先登录', 'error');
+                setTimeout(() => window.location.href = '登录.html', 1500);
+                return false;
+            }
+            return user;
+        }
+
+        async function apiCall(url, options = {}) {
+            const user = getUserInfo();
+            if (!user) {
+                showToast('请先登录', 'error');
+                window.location.href = '登录.html';
+                return null;
+            }
+
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Employee-Id': user.employeeId || user.employee_id
+                },
+                credentials: 'include'
+            };
+
+            return fetch(url, { ...defaultOptions, ...options });
+        }
+
+        document.getElementById('logoBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('logo-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function() {
+            document.getElementById('logo-menu').classList.add('hidden');
+        });
+
+        async function loadGameStatus() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/status?employeeId=${user.employeeId || user.employee_id}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.code === 200) {
+                    gameStatus = data.data;
+                    updateUI();
+                } else {
+                    showToast(data.message || '加载失败', 'error');
+                }
+            } catch (e) {
+                console.error('加载游戏状态失败:', e);
+            }
+        }
+
+        async function loadSignStatus() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/sign/status?employeeId=${user.employeeId || user.employee_id}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.code === 200) {
+                    signStatus = data.data;
+                    updateSignUI();
+                }
+            } catch (e) {
+                console.error('加载签到状态失败:', e);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('headerCoins').textContent = formatNumber(gameStatus.coins || 0);
+            document.getElementById('headerLevel').textContent = (gameStatus.coinLevel || 0) + '级';
+            document.getElementById('unclaimedCount').textContent = gameStatus.unclaimedCount || 0;
+            document.getElementById('currentIncome').textContent = gameStatus.currentIncome || 100;
+            document.getElementById('levelDisplay').textContent = (gameStatus.coinLevel || 0) + '级';
+            document.getElementById('upgradeCost').textContent = formatNumber(gameStatus.upgradeCost || 0) + ' 金币';
+
+            const progress = ((gameStatus.unclaimedCount || 0) / (gameStatus.maxUnclaimed || 3)) * 100;
+            document.getElementById('unclaimedProgress').style.width = progress + '%';
+
+            document.getElementById('collectBtn').disabled = (gameStatus.unclaimedCount || 0) <= 0;
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            let remaining = gameStatus.nextCollectSeconds || 0;
+
+            function updateCountdown() {
+                if (remaining <= 0) {
+                    document.getElementById('countdown').textContent = '可收菜!';
+                    document.getElementById('countdownMin').textContent = '0';
+                    document.getElementById('countdownRing').style.strokeDashoffset = '0';
+                    loadGameStatus();
+                } else {
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    document.getElementById('countdown').textContent = `距下次积累: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    document.getElementById('countdownMin').textContent = mins;
+
+                    const offset = CIRCUMFERENCE * (1 - (remaining / (TOTAL_MINUTES * 60)));
+                    document.getElementById('countdownRing').style.strokeDashoffset = offset;
+
+                    remaining--;
+                }
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function updateSignUI() {
+            const canSign = signStatus.canSign;
+            document.getElementById('signCount').textContent = signStatus.signCount || 0;
+
+            const signBtn = document.getElementById('signBtn');
+            const signStatusEl = document.getElementById('signStatus');
+
+            if (canSign) {
+                signBtn.disabled = false;
+                signBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                signBtn.classList.add('animate-pulse');
+                signStatusEl.textContent = '今日可签到！';
+                signStatusEl.className = 'mt-4 text-center text-green-400 text-sm';
+            } else {
+                signBtn.disabled = true;
+                signBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                signBtn.classList.remove('animate-pulse');
+                signStatusEl.textContent = '今日已签到';
+                signStatusEl.className = 'mt-4 text-center text-slate-500 text-sm';
+            }
+        }
+
+        document.getElementById('signBtn').addEventListener('click', async function() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/sign?employeeId=${user.employeeId || user.employee_id}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.data.success) {
+                    showToast(`签到成功! +200 金币`);
+                    loadGameStatus();
+                    loadSignStatus();
+                } else {
+                    showToast(data.data.message, 'error');
+                }
+            } catch (e) {
+                showToast('签到失败', 'error');
+            }
+        });
+
+        document.getElementById('collectBtn').addEventListener('click', async function() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/collect?employeeId=${user.employeeId || user.employee_id}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.data.success) {
+                    showToast(`领取成功! +${formatNumber(data.data.coinsCollected)} 金币`);
+                    loadGameStatus();
+                    loadBankStatus();
+                } else {
+                    showToast(data.data.message, 'error');
+                }
+            } catch (e) {
+                showToast('领取失败', 'error');
+            }
+        });
+
+        document.getElementById('upgradeBtn').addEventListener('click', function() {
+            document.getElementById('modalCurrentLevel').textContent = (gameStatus.coinLevel || 0) + ' 级';
+            document.getElementById('modalNewLevel').textContent = (gameStatus.coinLevel + 1) + ' 级';
+            document.getElementById('modalUpgradeCost').textContent = formatNumber(gameStatus.upgradeCost) + ' 金币';
+            document.getElementById('upgradeModal').classList.remove('hidden');
+            document.getElementById('upgradeModal').classList.add('flex');
+        });
+
+        function closeUpgradeModal() {
+            document.getElementById('upgradeModal').classList.add('hidden');
+            document.getElementById('upgradeModal').classList.remove('flex');
+        }
+
+        async function doUpgrade() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/upgrade?employeeId=${user.employeeId || user.employee_id}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.data.success) {
+                    showToast(`升级成功! -${formatNumber(data.data.coinsSpent)} 金币`);
+                    closeUpgradeModal();
+                    loadGameStatus();
+                } else {
+                    showToast(data.data.message, 'error');
+                }
+            } catch (e) {
+                showToast('升级失败', 'error');
+            }
+        }
+
+        async function loadBankStatus() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/bank/today?employeeId=${user.employeeId || user.employee_id}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.code === 200) {
+                    updateBankUI(data.data);
+                }
+            } catch (e) {
+                console.error('加载银行状态失败');
+            }
+        }
+
+        function updateBankUI(data) {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const isAm = currentHour < 12;
+
+            document.getElementById('periodAm').className = 'px-4 py-2 rounded-full text-sm font-medium ' + 
+                (isAm ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700/50 text-slate-400');
+            document.getElementById('periodPm').className = 'px-4 py-2 rounded-full text-sm font-medium ' + 
+                (!isAm ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700/50 text-slate-400');
+
+            const amInvested = data.amInvested === true;
+            const pmInvested = data.pmInvested === true;
+
+            document.getElementById('amInvestedBadge').style.display = amInvested ? 'flex' : 'none';
+            document.getElementById('pmInvestedBadge').style.display = pmInvested ? 'flex' : 'none';
+
+            if (isAm) {
+                if (amInvested) {
+                    document.getElementById('bankArea').classList.add('opacity-50', 'pointer-events-none');
+                    document.getElementById('investForm').classList.add('hidden');
+                    document.getElementById('investedStatus').classList.remove('hidden');
+                } else {
+                    document.getElementById('bankArea').classList.remove('opacity-50', 'pointer-events-none');
+                    document.getElementById('investForm').classList.add('hidden');
+                    document.getElementById('investedStatus').classList.add('hidden');
+                }
+            } else {
+                if (pmInvested) {
+                    document.getElementById('bankArea').classList.add('opacity-50', 'pointer-events-none');
+                    document.getElementById('investForm').classList.add('hidden');
+                    document.getElementById('investedStatus').classList.remove('hidden');
+                } else {
+                    document.getElementById('bankArea').classList.remove('opacity-50', 'pointer-events-none');
+                    document.getElementById('investForm').classList.add('hidden');
+                    document.getElementById('investedStatus').classList.add('hidden');
+                }
+            }
+
+            if (amInvested && pmInvested) {
+                document.getElementById('bankArea').classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('investForm').classList.add('hidden');
+                document.getElementById('investedStatus').classList.remove('hidden');
+            }
+
+            if (data.yesterdaySettlements && data.yesterdaySettlements.length > 0) {
+                document.getElementById('settlementResult').classList.remove('hidden');
+                let html = '';
+                data.yesterdaySettlements.forEach(s => {
+                    const emoji = s.result === '赚' ? '🎉' : '😅';
+                    html += `<p class="text-white text-center mb-2">${emoji} ${s.departmentName} 收益率 ${s.rate}，你${s.result}了 ${formatNumber(s.coinsChange)} 金币</p>`;
+                });
+                document.getElementById('settlementList').innerHTML = html;
+            } else if (data.yesterdaySettlement) {
+                document.getElementById('settlementResult').classList.remove('hidden');
+                const s = data.yesterdaySettlement;
+                const emoji = s.result === '赚' ? '🎉' : '😅';
+                document.getElementById('settlementList').innerHTML = 
+                    `<p class="text-white text-center">${emoji} ${s.departmentName} 收益率 ${s.rate}，你${s.result}了 ${formatNumber(s.coinsChange)} 金币</p>`;
+            }
+
+            if (data.lastInvestment) {
+                document.getElementById('lastInvestmentCard').classList.remove('hidden');
+                const last = data.lastInvestment;
+                const isProfit = last.result === '赚';
+                
+                document.getElementById('lastInvestmentCard').style.borderLeftColor = isProfit ? '#10b981' : '#ef4444';
+                document.getElementById('lastInvestmentResultBadge').textContent = isProfit ? '盈利' : '亏损';
+                document.getElementById('lastInvestmentResultBadge').className = 'px-3 py-1 rounded-full text-sm font-medium ' + 
+                    (isProfit ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400');
+                
+                document.getElementById('lastDept').textContent = last.departmentName;
+                document.getElementById('lastPeriod').textContent = last.periodName;
+                document.getElementById('lastAmount').textContent = formatNumber(last.amount);
+                document.getElementById('lastRate').textContent = last.rate;
+                document.getElementById('lastResultCoins').textContent = formatNumber(last.resultCoins);
+                document.getElementById('lastResultCoins').className = 'text-2xl font-bold ' + (isProfit ? 'text-green-400' : 'text-red-400');
+                
+                const profitText = isProfit ? `+${formatNumber(last.coinsChange)}` : `-${formatNumber(last.coinsChange)}`;
+                document.getElementById('lastProfit').textContent = profitText;
+                document.getElementById('lastProfit').className = 'text-lg font-bold ' + (isProfit ? 'text-green-400' : 'text-red-400');
+            } else {
+                document.getElementById('lastInvestmentCard').classList.add('hidden');
+            }
+        }
+
+        function selectBank(el) {
+            if (document.getElementById('investedStatus').classList.contains('hidden') === false) return;
+
+            document.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedOption = parseInt(el.dataset.option);
+
+            document.getElementById('selectedDept').textContent = getDeptName(selectedOption);
+            document.getElementById('investForm').classList.remove('hidden');
+            document.getElementById('investAmount').value = '';
+            document.getElementById('investAmount').focus();
+        }
+
+        function cancelInvest() {
+            document.querySelectorAll('.bank-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('investForm').classList.add('hidden');
+            selectedOption = null;
+        }
+
+        async function confirmInvest() {
+            const user = checkLogin();
+            if (!user) return;
+
+            const amount = parseInt(document.getElementById('investAmount').value);
+            if (!amount || amount <= 0) {
+                showToast('请输入正确的投资金额', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/invest?employeeId=${user.employeeId || user.employee_id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ amount, optionType: selectedOption })
+                });
+                const data = await res.json();
+                if (data.data.success) {
+                    showToast(`投资成功! -${formatNumber(amount)} 金币`);
+                    loadGameStatus();
+                    loadBankStatus();
+                } else {
+                    showToast(data.data.message, 'error');
+                }
+            } catch (e) {
+                showToast('投资失败', 'error');
+            }
+        }
+
+        async function loadRank() {
+            const user = checkLogin();
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/rank?employeeId=${user.employeeId || user.employee_id}`, { credentials: 'include' });
+                const data = await res.json();
+                if (data.code === 200) {
+                    updateRankUI(data.data);
+                }
+            } catch (e) {
+                console.error('加载排行榜失败');
+            }
+        }
+
+        function updateRankUI(data) {
+            const maxCoins = data.top10 && data.top10.length > 0 ? data.top10[0].coins : 1;
+
+            let html = '';
+            if (data.top10 && data.top10.length > 0) {
+                data.top10.forEach((item, i) => {
+                    const width = (item.coins / maxCoins) * 100;
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+                    html += `
+                        <div class="rank-item flex items-center gap-4 p-3 rounded-xl">
+                            <div class="w-8 h-8 rounded-full ${i < 3 ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-slate-700'} flex items-center justify-center text-white font-bold text-sm">
+                                ${medal || (i + 1)}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-slate-300 text-sm">${item.name}</span>
+                                    <span class="gold-text text-sm font-bold">${formatNumber(item.coins)}</span>
+                                </div>
+                                <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all" style="width: ${width}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = '<p class="text-center text-slate-500 py-4">暂无排行榜数据</p>';
+            }
+            document.getElementById('rankList').innerHTML = html;
+
+            if (data.currentUser) {
+                document.getElementById('myRank').textContent = data.currentUser.rank || '--';
+                document.getElementById('myRankCoins').textContent = formatNumber(data.currentUser.coins || 0);
+            }
+        }
+
+        function getDeptName(type) {
+            const names = { 1: '人力部门', 2: '研发部门', 3: '销售部门' };
+            return names[type] || '--';
+        }
+
+        function formatNumber(num) {
+            if (num >= 10000) {
+                return (num / 10000).toFixed(1) + '万';
+            }
+            return num.toLocaleString();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toastMessage');
+            msg.textContent = message;
+            toast.className = 'fixed top-4 right-4 glass-card px-6 py-3 rounded-xl z-50 toast ' +
+                (type === 'error' ? 'border border-red-500/50' : 'border border-emerald-500/50');
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        setInterval(loadGameStatus, 30000);
+        setInterval(loadSignStatus, 30000);
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGameStatus();
+            loadSignStatus();
+            loadBankStatus();
+            loadRank();
+            // 每30秒自动刷新金币状态（后台挂机）
+            setInterval(function() {
+                loadGameStatus();
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

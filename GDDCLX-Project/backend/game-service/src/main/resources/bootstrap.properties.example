@@ -1,0 +1,16 @@
+spring.application.name=game-service
+
+spring.config.import=optional:nacos:localhost:8848
+spring.cloud.nacos.config.override-none=true
+spring.cloud.nacos.config.server-addr=localhost:8848
+spring.cloud.nacos.config.namespace=public
+spring.cloud.nacos.config.group=DEFAULT_GROUP
+spring.cloud.nacos.config.file-extension=properties
+
+spring.cloud.nacos.discovery.server-addr=localhost:8848
+spring.cloud.nacos.discovery.namespace=public
+
+spring.cloud.nacos.username=${NACOS_USERNAME:nacos}
+spring.cloud.nacos.password=${NACOS_PASSWORD:}
+
+spring.profiles.active=dev

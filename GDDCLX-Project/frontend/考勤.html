@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次世代智能考勤系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        secondary: '#3b82f6',
+                        'primary-50': '#ecfdf5',
+                        'primary-100': '#d1fae5',
+                        'primary-400': '#34d399',
+                        'primary-500': '#10b981',
+                        'primary-600': '#059669',
+                        'gddclx-dark': '#0a1128',
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '2px',
+                        DEFAULT: '4px',
+                        'md': '8px',
+                        'lg': '12px',
+                        'xl': '16px',
+                        '2xl': '20px',
+                        '3xl': '24px',
+                        '4xl': '40px',
+                        'full': '9999px',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', "Segoe UI", 'Roboto', "Helvetica Neue", 'Arial', 'sans-serif'],
+                        pacifico: ['Pacifico', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://static.mastergo.com/static/ai/resource/html/font-awesome/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f6f9fc;
+            background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border-radius: 40px;
+            transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .glass-card:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .interactive-element {
+            transition: all 300ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .interactive-element:hover {
+            transform: scale(1.05);
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 24px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        
+        .btn-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-disabled:hover {
+            transform: none;
+        }
+        
+        #logo-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            margin: 0;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 50;
+        }
+        #logo-menu.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+        
+        #success-toast {
+            margin: 2rem auto auto auto;
+            opacity: 0;
+            transform: translateY(-1rem) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #success-toast:popover-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        
+        #error-toast {
+            margin: 2rem auto auto auto;
+            opacity: 0;
+            transform: translateY(-1rem) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        #error-toast:popover-open {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 text-slate-800">
+
+    <!-- 成功提示浮层 -->
+    <div id="success-toast" popover class="bg-white/80 backdrop-blur-2xl border border-white shadow-xl rounded-full px-6 py-4 flex items-center gap-3 z-50">
+        <div class="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center shrink-0">
+            <i class="fas fa-check"></i>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-slate-800" id="toast-success-title">打卡成功</p>
+            <p class="text-xs text-slate-500 font-medium" id="toast-success-message">当前时间 08:55 AM · 祝您工作愉快</p>
+        </div>
+    </div>
+
+    <!-- 错误提示浮层 -->
+    <div id="error-toast" popover class="bg-white/80 backdrop-blur-2xl border border-white shadow-xl rounded-full px-6 py-4 flex items-center gap-3 z-50">
+        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shrink-0">
+            <i class="fas fa-times"></i>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-slate-800" id="toast-error-title">打卡失败</p>
+            <p class="text-xs text-slate-500 font-medium" id="toast-error-message">今天已经打卡过了</p>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <main class="w-full max-w-6xl mx-auto flex flex-col gap-6 lg:gap-8">
+        
+        <!-- 顶部信息栏 -->
+        <header class="flex justify-between items-center w-full max-w-7xl mx-auto mb-6">
+            <div class="flex items-center gap-3">
+                <div class="relative" id="logoWrapper">
+                    <button id="logoBtn" class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-md flex items-center justify-center interactive-element cursor-pointer">
+                        <i class="fas fa-layer-group text-white text-lg flex justify-center items-center"></i>
+                    </button>
+                    <div id="logo-menu" class="glass-card w-48 p-2 bg-white/95 border-slate-200 m-0 shadow-xl z-50 rounded-xl">
+                        <div class="py-2 flex flex-col gap-1">
+                            <a href="javascript:history.back()" class="px-4 py-2 text-sm text-slate-700 hover:bg-primary-50 hover:text-primary-600 rounded-lg transition-colors flex items-center gap-2">
+                                <i class="fas fa-arrow-left w-4"></i> 回到上一页
+                            </a>
+                            <a href="登录.html" class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+                                <i class="fas fa-sign-out-alt w-4"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tighter text-gddclx-dark font-pacifico cursor-pointer" onclick="goHome()">logo</h1>
+            </div>
+        </header>
+
+        <!-- 核心内容区 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+            
+            <!-- 主打卡区 -->
+            <div class="lg:col-span-7 relative overflow-hidden glass-card p-8 md:p-12 flex flex-col items-center justify-center min-h-[480px]">
+                
+                <div class="relative z-10 flex flex-col items-center w-full">
+                    
+                    <!-- 打卡按钮 -->
+                    <button id="checkin-btn" class="group relative w-56 h-56 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 shadow-2xl shadow-primary-500/30 flex flex-col items-center justify-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:scale-[1.02] active:scale-95 animate-pulse-glow border-4 border-white/20">
+                        <div class="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+                        <i class="fas fa-clock text-5xl text-white drop-shadow-md"></i>
+                        <span class="text-2xl font-bold tracking-tight text-white drop-shadow-md" id="btn-text">快速打卡</span>
+                        <span class="text-sm font-medium text-primary-50 bg-black/10 px-3 py-1 rounded-full backdrop-blur-sm" id="btn-time">--:-- --</span>
+                    </button>
+
+                    <!-- 签退按钮 -->
+                    <button id="checkout-btn" class="group relative w-40 h-40 rounded-full bg-gradient-to-br from-orange-400 to-red-500 shadow-2xl shadow-red-500/30 flex flex-col items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-95 border-4 border-white/20" style="display:none;">
+                        <i class="fas fa-sign-out-alt text-3xl text-white drop-shadow-md"></i>
+                        <span class="text-lg font-bold text-white drop-shadow-md" id="checkout-btn-text">签退</span>
+                    </button>
+
+                    <!-- 今日打卡统计 -->
+                    <div class="mt-12 w-full max-w-md bg-white/80 backdrop-blur-xl rounded-3xl p-6 border border-white shadow-sm flex flex-col items-center">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">今日企业出勤实况</p>
+                        <div class="flex items-baseline gap-4">
+                            <div class="flex items-baseline">
+                                <span class="text-5xl font-black tracking-tighter text-slate-800" id="checkin-count">--</span>
+                                <span class="text-base font-semibold text-slate-500 ml-1">人</span>
+                            </div>
+                            <div class="h-8 w-[1px] bg-slate-200"></div>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-full">
+                                <i class="fas fa-arrow-trend-up text-sm"></i>
+                                <span class="text-lg font-bold" id="checkin-rate">--%</span>
+                            </div>
+                        </div>
+                        <!-- 进度条 -->
+                        <div class="w-full h-2 bg-slate-100 rounded-full mt-5 overflow-hidden">
+                            <div id="checkin-progress-bar" class="h-full bg-gradient-to-r from-primary-400 to-primary-500 rounded-full w-[0%] transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧统计列 -->
+            <div class="lg:col-span-5 flex flex-col gap-6 lg:gap-8">
+                
+                <!-- 近7日考勤 -->
+                <div class="glass-card p-8 flex flex-col justify-center">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 tracking-tight">近7日考勤</h2>
+                            <p class="text-sm font-medium text-slate-500 mt-1">本周已连续出勤 <span id="consecutive-days">--</span> 天</p>
+                        </div>
+                        <span class="text-primary-500 bg-primary-50 px-3 py-1 rounded-lg text-sm font-bold" id="attendance-level">--</span>
+                    </div>
+                    
+                    <!-- 7天节点图 -->
+                    <div class="flex justify-between items-center relative">
+
+                        <!-- 周一 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-0">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">一</span>
+                        </div>
+                        <!-- 周二 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-1">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">二</span>
+                        </div>
+                        <!-- 周三 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-2">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">三</span>
+                        </div>
+                        <!-- 周四 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-3">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">四</span>
+                        </div>
+                        <!-- 周五 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-4">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800">五</span>
+                        </div>
+                        <!-- 周六 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-5">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">六</span>
+                        </div>
+                        <!-- 周日 -->
+                        <div class="relative z-10 flex flex-col items-center gap-3" id="day-6">
+                            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator">
+                                <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-400">日</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 本月考勤统计 -->
+                <div class="glass-card p-8 flex flex-col justify-center">
+                    <h2 class="text-lg font-bold text-slate-900 tracking-tight mb-6">本月考勤统计</h2>
+                    
+                    <div class="flex items-center gap-6">
+                        <!-- 圆形进度 -->
+                        <div class="relative w-28 h-28 shrink-0 flex items-center justify-center rounded-full bg-slate-50">
+                            <div class="absolute inset-0 rounded-full flex items-center justify-center">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="8" class="text-slate-100"></circle>
+                                    <circle id="month-progress-circle" cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="8" class="text-primary-500" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" style="transition: stroke-dashoffset 0.5s"></circle>
+                                </svg>
+                            </div>
+                            <div class="text-center z-10">
+                                <span class="block text-2xl font-black text-slate-800 tracking-tighter"><span id="month-rate">--</span><span class="text-sm font-bold">%</span></span>
+                            </div>
+                        </div>
+
+                        <!-- 详细数据 -->
+                        <div class="flex-1">
+                            <div class="flex items-end gap-2 mb-2">
+                                <span class="text-4xl font-black tracking-tighter text-slate-800 leading-none" id="days-checked">--</span>
+                                <span class="text-lg font-bold text-slate-400 leading-none mb-1">/ <span id="days-total">--</span> <span class="text-sm font-medium">天</span></span>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500 leading-relaxed" id="month-desc">
+                                正在加载...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = getApiBase();
+        function goHome(){try{var u=JSON.parse(localStorage.getItem('userInfo'));window.location.href=u&&u.role==='admin'?'首页.html':'员工首页.html';}catch(e){window.location.href='员工首页.html';}}
+
+        function getCurrentUserId() {
+            const userInfo = localStorage.getItem('userInfo');
+            if (userInfo) {
+                try {
+                    const parsed = JSON.parse(userInfo);
+                    return parsed.userId || parsed.employeeId || parsed.employee_id || parsed.id;
+                } catch (e) {
+                    console.error('解析用户信息失败', e);
+                }
+            }
+            const userId = localStorage.getItem('userId');
+            if (userId) return userId;
+            console.warn('未找到登录用户ID，使用测试ID');
+            return 'test_user_001';
+        }
+
+        async function init() {
+            const userId = getCurrentUserId();
+            console.log('========== 考勤页面初始化 ==========');
+            console.log('当前登录用户ID:', userId);
+            console.log('API 地址:', API_BASE_URL);
+            
+            await Promise.all([
+                loadTodayCompanyData(),
+                loadWeekAttendance(userId),
+                loadMonthAttendance(userId),
+                checkTodayChecked(userId)
+            ]);
+            
+            console.log('========== 初始化完成 ==========');
+        }
+
+        async function checkTodayChecked(userId) {
+            console.log('>>> 检查今日是否已打卡，用户ID:', userId);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/today/${userId}`);
+                const result = await response.json();
+                console.log('今日打卡状态接口响应:', result);
+                
+                const data = result.data || result;
+                const isChecked = data.isChecked || data.checked || false;
+                
+                if (isChecked) {
+                    console.log('用户今日已打卡');
+                    const checkinTime = data.checkinTime || data.time || '--:-- --';
+                    disableCheckinButton();
+                    document.getElementById('btn-time').textContent = checkinTime;
+
+                    // Show checkout button if not yet checked out
+                    const checkoutBtn = document.getElementById('checkout-btn');
+                    const checkoutText = document.getElementById('checkout-btn-text');
+                    if (data.checkoutTime) {
+                        checkoutBtn.style.display = 'flex';
+                        checkoutBtn.classList.add('opacity-50');
+                        checkoutBtn.disabled = true;
+                        checkoutText.textContent = '已签退';
+                    } else {
+                        checkoutBtn.style.display = 'flex';
+                        checkoutBtn.classList.remove('opacity-50');
+                        checkoutBtn.disabled = false;
+                        checkoutText.textContent = '签退';
+                    }
+                } else {
+                    console.log('用户今日未打卡');
+                }
+            } catch (error) {
+                console.error('检查今日打卡状态失败:', error);
+                console.log('备用方案：检查本地缓存');
+                const todayKey = `checked_${new Date().toDateString()}`;
+                if (localStorage.getItem(todayKey) === '1') {
+                    console.log('本地缓存显示已打卡');
+                    disableCheckinButton();
+                }
+            }
+        }
+
+        async function handleCheckin() {
+            const userId = getCurrentUserId();
+            console.log('>>> 发起打卡请求，用户ID:', userId);
+            
+            const btn = document.getElementById('checkin-btn');
+            const originalText = document.getElementById('btn-text').textContent;
+            document.getElementById('btn-text').textContent = '打卡中...';
+            btn.disabled = true;
+            btn.classList.add('btn-disabled');
+
+            try {
+                const requestBody = { userId: userId };
+                console.log('打卡请求体:', requestBody);
+                
+                const response = await fetch(`${API_BASE_URL}/api/attendance/checkin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                const result = await response.json();
+                console.log('打卡接口响应:', result);
+
+                if (result.code === 200 || result.success) {
+                    const checkinTime = result.checkinTime || result.data?.checkinTime || formatTime(new Date());
+                    console.log('打卡成功，时间:', checkinTime);
+                    
+                    showSuccessToast(checkinTime);
+                    disableCheckinButton();
+                    document.getElementById('btn-time').textContent = checkinTime;
+                    const todayKey = `checked_${new Date().toDateString()}`;
+                    localStorage.setItem(todayKey, '1');
+                    
+                    console.log('>>> 刷新数据...');
+                    await loadTodayCompanyData();
+                    await loadWeekAttendance(userId);
+                    await loadMonthAttendance(userId);
+                    console.log('>>> 数据刷新完成');
+                } else {
+                    console.log('打卡失败:', result.message);
+                    showErrorToast(result.message || '打卡失败');
+                    document.getElementById('btn-text').textContent = originalText;
+                    btn.disabled = false;
+                    btn.classList.remove('btn-disabled');
+                }
+            } catch (error) {
+                console.error('打卡请求失败:', error);
+                showErrorToast('网络错误，请稍后重试');
+                document.getElementById('btn-text').textContent = originalText;
+                btn.disabled = false;
+                btn.classList.remove('btn-disabled');
+            }
+        }
+
+        function disableCheckinButton() {
+            const btn = document.getElementById('checkin-btn');
+            btn.disabled = true;
+            btn.classList.remove('animate-pulse-glow');
+            btn.classList.add('btn-disabled');
+            document.getElementById('btn-text').textContent = '已打卡';
+            // Show checkout button after checkin
+            document.getElementById('checkout-btn').style.display = 'flex';
+        }
+
+        async function handleCheckout() {
+            const userId = getCurrentUserId();
+            const btn = document.getElementById('checkout-btn');
+            const btnText = document.getElementById('checkout-btn-text');
+            btnText.textContent = '签退中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId })
+                });
+                const result = await response.json();
+
+                if (result.code === 200 || result.success) {
+                    const data = result.data;
+                    let msg = '签退成功';
+                    if (data.late) msg += ' (迟到)';
+                    if (data.early) msg += ' (早退)';
+                    showSuccessToast(data.checkoutTime || formatTime(new Date()));
+                    btnText.textContent = '已签退';
+                    btn.classList.add('opacity-50');
+                } else {
+                    showErrorToast(result.message || '签退失败');
+                    btnText.textContent = '签退';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('签退请求失败:', error);
+                showErrorToast('网络错误，请稍后重试');
+                btnText.textContent = '签退';
+                btn.disabled = false;
+            }
+        }
+
+        function showSuccessToast(time) {
+            const toast = document.getElementById('success-toast');
+            document.getElementById('toast-success-message').textContent = `当前时间 ${time} · 祝您工作愉快`;
+            toast.showPopover();
+            setTimeout(() => {
+                if (toast.matches(':popover-open')) {
+                    toast.hidePopover();
+                }
+            }, 3000);
+        }
+
+        function showErrorToast(message) {
+            const toast = document.getElementById('error-toast');
+            document.getElementById('toast-error-message').textContent = message;
+            toast.showPopover();
+            setTimeout(() => {
+                if (toast.matches(':popover-open')) {
+                    toast.hidePopover();
+                }
+            }, 3000);
+        }
+
+        function formatTime(date) {
+            let hours = date.getHours();
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
+        async function loadTodayCompanyData() {
+            console.log('>>> 加载今日企业出勤数据');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/today/company`);
+                const result = await response.json();
+                console.log('企业出勤数据响应:', result);
+                
+                const data = result.data || result;
+                let checked = data.checkedCount || data.checked_count || 0;
+                let total = data.totalCount || data.total_count || 0;
+                let rate = data.attendanceRate || data.attendance_rate || 0;
+                
+                rate = Math.round(rate);
+                
+                console.log(`企业数据 - 已打卡: ${checked}, 总数: ${total}, 出勤率: ${rate}%`);
+
+                document.getElementById('checkin-count').textContent = checked.toLocaleString();
+                document.getElementById('checkin-rate').textContent = `${rate}%`;
+                document.getElementById('checkin-progress-bar').style.width = `${rate}%`;
+            } catch (error) {
+                console.error('加载今日企业数据失败:', error);
+            }
+        }
+
+        async function loadWeekAttendance(userId) {
+            console.log('>>> 加载近7日考勤，用户ID:', userId);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/week/${userId}`);
+                const result = await response.json();
+                console.log('近7日考勤响应:', result);
+                
+                const data = result.data || result;
+                let weekList = data.weekList || data.week_list || [false, false, false, false, false, false, false];
+                const consecutive = data.consecutiveDays || data.consecutive_days || 0;
+                const level = data.attendanceLevel || data.attendance_level || '优良';
+                
+                console.log('近7日考勤数据 - 原始 weekList:', weekList);
+                
+                // 安全检查：确保每个元素都是布尔值
+                weekList = weekList.map((item, index) => {
+                    let isChecked = false;
+                    
+                    // 兼容多种格式
+                    if (typeof item === 'boolean') {
+                        isChecked = item;
+                    } else if (item && typeof item === 'object' && 'checked' in item) {
+                        isChecked = Boolean(item.checked);
+                    } else {
+                        isChecked = Boolean(item);
+                    }
+                    
+                    console.log(`  第${index}天 (${['一','二','三','四','五','六','日'][index]}):`, item, '->', isChecked);
+                    return isChecked;
+                });
+                
+                console.log('处理后的 weekList:', weekList);
+                console.log('连续天数:', consecutive, '等级:', level);
+
+                document.getElementById('consecutive-days').textContent = consecutive;
+                document.getElementById('attendance-level').textContent = level;
+                renderWeekStatus(weekList);
+            } catch (error) {
+                console.error('加载近7日考勤失败:', error);
+            }
+        }
+
+        function renderWeekStatus(statusList) {
+            for (let i = 0; i < 7; i++) {
+                const dayEl = document.getElementById(`day-${i}`);
+                const indicator = dayEl.querySelector('.day-indicator');
+                
+                if (statusList[i]) {
+                    indicator.className = 'w-10 h-10 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-lg shadow-primary-500/30 ring-4 ring-white interactive-element cursor-pointer day-indicator';
+                    indicator.innerHTML = '<i class="fas fa-check"></i>';
+                } else {
+                    indicator.className = 'w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center ring-4 ring-white interactive-element cursor-pointer day-indicator';
+                    indicator.innerHTML = '<div class="w-2 h-2 rounded-full bg-slate-300"></div>';
+                }
+            }
+        }
+
+        async function loadMonthAttendance(userId) {
+            console.log('>>> 加载本月考勤统计，用户ID:', userId);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/attendance/month/${userId}`);
+                const result = await response.json();
+                console.log('本月考勤响应:', result);
+                
+                const data = result.data || result;
+                const checked = data.checkedDays || data.checked_days || 0;
+                const total = data.totalDays || data.total_days || 0;
+                let rate = data.attendanceRate || data.attendance_rate || 0;
+                rate = Math.round(rate);
+                const desc = data.description || data.desc || `本月应出勤 ${total} 天，您已成功签到 ${checked} 天。`;
+                
+                console.log(`本月考勤 - 已打卡: ${checked}, 应出勤: ${total}, 出勤率: ${rate}%`);
+
+                document.getElementById('days-checked').textContent = checked;
+                document.getElementById('days-total').textContent = total;
+                document.getElementById('month-rate').textContent = rate;
+                document.getElementById('month-desc').innerHTML = desc.replace('\n', '<br>');
+                const circle = document.getElementById('month-progress-circle');
+                const circumference = 251.2;
+                const offset = circumference - (rate / 100) * circumference;
+                circle.style.strokeDashoffset = offset;
+            } catch (error) {
+                console.error('加载本月考勤统计失败:', error);
+            }
+        }
+
+        document.getElementById('checkin-btn').addEventListener('click', handleCheckin);
+        document.getElementById('checkout-btn').addEventListener('click', handleCheckout);
+        document.addEventListener('DOMContentLoaded', init);
+
+        document.getElementById('logoBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('logo-menu').classList.toggle('active');
+        });
+        document.addEventListener('click', function(e) {
+            var menu = document.getElementById('logo-menu');
+            if (menu.classList.contains('active') && !document.getElementById('logoWrapper').contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    AttendanceMapper XML 映射文件（主微服务 demo:8080）
+    对应 Java 接口：com.example.demo.mapper.AttendanceMapper
+    实体类：com.example.demo.domain.Attendance
+    操作表：attendance（考勤记录表）
+    核心逻辑：签到签退、迟到早退自动判定、扣款确认/赦免、定时标记早退
+-->
+<mapper namespace="com.example.demo.mapper.AttendanceMapper">
+
+    <!-- 数据库列名 → Java属性映射 -->
+    <resultMap id="BaseResultMap" type="com.example.demo.domain.Attendance">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="employee_id" property="employeeId" jdbcType="VARCHAR"/>    <!-- 员工工号 -->
+        <result column="checkin_date" property="checkinDate" jdbcType="DATE"/>      <!-- 打卡日期 -->
+        <result column="checkin_time" property="checkinTime" jdbcType="TIMESTAMP"/> <!-- 签到时间 -->
+        <result column="checkout_time" property="checkoutTime" jdbcType="TIMESTAMP"/><!-- 签退时间 -->
+        <result column="is_late" property="isLate" jdbcType="TINYINT"/>             <!-- 是否迟到 0/1 -->
+        <result column="is_early" property="isEarly" jdbcType="TINYINT"/>           <!-- 是否早退 0/1 -->
+        <result column="late_confirmed" property="lateConfirmed" jdbcType="TINYINT"/> <!-- 迟到扣款已确认 -->
+        <result column="early_confirmed" property="earlyConfirmed" jdbcType="TINYINT"/><!-- 早退扣款已确认 -->
+        <result column="salary_deduct" property="salaryDeduct" jdbcType="INTEGER"/>  <!-- 累计扣款金额 -->
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>    <!-- 创建时间 -->
+    </resultMap>
+
+    <!-- 通用列名 -->
+    <sql id="Base_Column_List">
+        id, employee_id, checkin_date, checkin_time, checkout_time,
+        is_late, is_early, late_confirmed, early_confirmed, salary_deduct, create_time
+    </sql>
+
+    <!-- ==================== CUD 写操作 ==================== -->
+
+    <!-- 签到：INSERT新记录 -->
+    <insert id="insert" parameterType="com.example.demo.domain.Attendance" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO attendance (employee_id, checkin_date, checkin_time, create_time)
+        VALUES (#{employeeId}, #{checkinDate}, #{checkinTime}, #{createTime})
+    </insert>
+
+    <!-- 签退：UPDATE checkout_time + is_late + is_early -->
+    <update id="updateCheckout">
+        UPDATE attendance
+        SET checkout_time = NOW(),
+            is_late = #{isLate},
+            is_early = #{isEarly}
+        WHERE employee_id = #{employeeId}
+          AND DATE_FORMAT(checkin_date, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')  <!-- 只更新今天的记录 -->
+    </update>
+
+    <!-- 确认迟到扣款：salary_deduct += 50 -->
+    <update id="confirmLate">
+        UPDATE attendance SET late_confirmed = 1,
+        salary_deduct = salary_deduct + 50
+        WHERE employee_id = #{employeeId} AND is_late = 1 AND late_confirmed = 0
+    </update>
+
+    <!-- 确认早退扣款 -->
+    <update id="confirmEarly">
+        UPDATE attendance SET early_confirmed = 1,
+        salary_deduct = salary_deduct + 50
+        WHERE employee_id = #{employeeId} AND is_early = 1 AND early_confirmed = 0
+    </update>
+
+    <!-- 赦免迟到：salary_deduct -= 50（>=50防负数保护） -->
+    <update id="forgiveLate">
+        UPDATE attendance SET late_confirmed = 0, salary_deduct = salary_deduct - 50
+        WHERE employee_id = #{employeeId} AND is_late = 1 AND late_confirmed = 1 AND salary_deduct >= 50
+    </update>
+
+    <!-- 赦免早退 -->
+    <update id="forgiveEarly">
+        UPDATE attendance SET early_confirmed = 0, salary_deduct = salary_deduct - 50
+        WHERE employee_id = #{employeeId} AND is_early = 1 AND early_confirmed = 1 AND salary_deduct >= 50
+    </update>
+
+    <!-- 定时任务：标记昨天未签退者为早退（每天凌晨1:00执行） -->
+    <update id="autoMarkEarlyLeave">
+        UPDATE attendance SET is_early = 1
+        WHERE checkout_time IS NULL
+          AND DATE_FORMAT(checkin_date, '%Y-%m-%d') = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 DAY), '%Y-%m-%d')
+          AND is_early = 0
+    </update>
+
+    <!-- ==================== R 查询操作 ==================== -->
+
+    <!-- 按工号+日期字符串查打卡记录（签到防重复、签退校验） -->
+    <select id="selectByEmployeeIdAndDateStr" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM attendance
+        WHERE employee_id = #{employeeId} AND DATE_FORMAT(checkin_date, '%Y-%m-%d') = #{checkinDateStr}
+    </select>
+
+    <!-- 按工号+Date查 -->
+    <select id="selectByEmployeeIdAndDate" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM attendance WHERE employee_id = #{employeeId} AND checkin_date = #{date}
+    </select>
+
+    <!-- 今日已打卡人数（DISTINCT去重） -->
+    <select id="countTodayCheckinStr" resultType="int">
+        SELECT COUNT(DISTINCT employee_id)
+        FROM attendance
+        WHERE DATE_FORMAT(checkin_date, '%Y-%m-%d') = #{todayStr}
+    </select>
+
+    <!-- 日期范围查询（周/月统计用） -->
+    <select id="selectByEmployeeIdAndDateRange" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM attendance
+        WHERE employee_id = #{employeeId}
+        AND checkin_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY checkin_date ASC
+    </select>
+
+    <!-- 日期范围内打卡天数（DISTINCT日期） -->
+    <select id="countByEmployeeIdAndDateRange" resultType="int">
+        SELECT COUNT(DISTINCT checkin_date)
+        FROM attendance
+        WHERE employee_id = #{employeeId}
+        AND checkin_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <!-- 公司总人数（查employee表） -->
+    <select id="countEmployeeTotal" resultType="int">
+        SELECT COUNT(*) FROM employee
+    </select>
+
+    <!-- 全量查询（AI接口用） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM attendance ORDER BY checkin_date DESC, checkin_time DESC
+    </select>
+
+    <!-- 带姓名的迟到早退统计（LEFT JOIN） -->
+    <select id="selectAllWithLateEarly" resultType="java.util.HashMap">
+        SELECT e.employee_id as employeeId, e.name,
+               SUM(a.is_late) as totalLate, SUM(a.late_confirmed) as confirmedLate,
+               SUM(a.is_early) as totalEarly, SUM(a.early_confirmed) as confirmedEarly,
+               COALESCE(SUM(a.salary_deduct), 0) as totalDeduct   <!-- COALESCE防NULL -->
+        FROM employee e
+        LEFT JOIN attendance a ON e.employee_id = a.employee_id
+        GROUP BY e.employee_id, e.name
+    </select>
+
+    <!-- 某员工累计迟到/早退/扣款统计（绩效计算用） -->
+    <select id="countTotalLateEarlyByEmployeeId" resultType="java.util.HashMap">
+        SELECT SUM(is_late) as totalLate, SUM(late_confirmed) as confirmedLate,
+               SUM(is_early) as totalEarly, SUM(early_confirmed) as confirmedEarly,
+               COALESCE(SUM(salary_deduct), 0) as totalDeduct
+        FROM attendance WHERE employee_id = #{employeeId}
+    </select>
+</mapper>

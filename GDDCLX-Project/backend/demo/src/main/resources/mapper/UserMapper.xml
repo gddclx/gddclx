@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    UserMapper XML 映射文件（已废弃）
+    对应 Java 接口：com.example.demo.mapper.UserMapper
+    操作表：user（Spring Initializr 脚手架生成的示例表，非项目使用的 employee 表）
+    功能已被 EmployeeMapper 完全替代，前端无任何页面调用此Mapper的接口
+    保留原因：未清理的脚手架遗留代码
+-->
+<mapper namespace="com.example.demo.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.demo.domain.User">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>   <!-- 用户名（employee表用的是employee_id） -->
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="age" property="age" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, password, email, age, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.example.demo.domain.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (username, password, email, age, create_time, update_time)
+        VALUES (#{username}, #{password}, #{email}, #{age}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!-- 使用 <set> 标签实现动态更新（只更新非null字段） -->
+    <update id="update" parameterType="com.example.demo.domain.User">
+        UPDATE user
+        <set>
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="age != null">age = #{age},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM user WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM user
+    </select>
+
+    <select id="selectByUsername" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM user WHERE username = #{username}
+    </select>
+
+</mapper>

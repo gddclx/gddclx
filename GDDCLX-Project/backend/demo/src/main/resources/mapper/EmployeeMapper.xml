@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    EmployeeMapper XML 映射文件（主微服务 demo:8080）
+    对应 Java 接口：com.example.demo.mapper.EmployeeMapper
+    实体类：com.example.demo.domain.Employee
+    操作表：employee（系统核心表，登录、注册、档案管理、绩效计算均依赖此表）
+-->
+<mapper namespace="com.example.demo.mapper.EmployeeMapper">
+
+    <!--
+        数据库列名 → Java属性映射
+        数据库蛇形 employee_id ↔ Java驼峰 employeeId
+    -->
+    <resultMap id="BaseResultMap" type="com.example.demo.domain.Employee">
+        <id column="id" property="id" jdbcType="INTEGER"/>               <!-- 自增主键 -->
+        <result column="employee_id" property="employeeId" jdbcType="VARCHAR"/>  <!-- 员工工号 -->
+        <result column="password" property="password" jdbcType="VARCHAR"/>       <!-- 密码 -->
+        <result column="name" property="name" jdbcType="VARCHAR"/>               <!-- 姓名 -->
+        <result column="role" property="role" jdbcType="VARCHAR"/>               <!-- admin/employee -->
+        <result column="department" property="department" jdbcType="VARCHAR"/>   <!-- 部门 -->
+        <result column="position" property="position" jdbcType="VARCHAR"/>       <!-- 当前岗位 -->
+        <result column="status" property="status" jdbcType="VARCHAR"/>           <!-- 在职/试用/离职 -->
+        <result column="positions" property="positions" jdbcType="VARCHAR"/>     <!-- JSON多岗位 -->
+        <result column="hire_date" property="hireDate" jdbcType="DATE"/>         <!-- 入职日期 -->
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/><!-- 创建时间 -->
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/><!-- 更新时间 -->
+    </resultMap>
+
+    <!-- 通用列名片段 -->
+    <sql id="Base_Column_List">
+        id, employee_id, password, name, role, department, position, status, positions, hire_date, create_time, update_time
+    </sql>
+
+    <!-- 按工号查员工（登录验证、注册查重、档案查询） -->
+    <select id="selectByEmployeeId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM employee WHERE employee_id = #{employeeId}
+    </select>
+
+    <!-- 全量查询（员工列表、绩效计算、岗位统计） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM employee
+    </select>
+
+    <!-- 插入新员工 -->
+    <insert id="insert" parameterType="com.example.demo.domain.Employee" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee (employee_id, password, name, role, department, position, status, positions, hire_date, create_time, update_time)
+        VALUES (#{employeeId}, #{password}, #{name}, #{role}, #{department}, #{position}, #{status}, #{positions}, #{hireDate}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!-- 按原工号更新（支持修改工号） -->
+    <update id="updateByEmployeeId">
+        UPDATE employee
+        SET employee_id = #{employee.employeeId},
+            name = #{employee.name},
+            department = #{employee.department},
+            position = #{employee.position},
+            status = #{employee.status},
+            positions = #{employee.positions},
+            update_time = #{employee.updateTime}
+        WHERE employee_id = #{originalEmployeeId}
+    </update>
+
+    <!-- 按工号删除员工 -->
+    <delete id="deleteByEmployeeId">
+        DELETE FROM employee WHERE employee_id = #{employeeId}
+    </delete>
+
+</mapper>

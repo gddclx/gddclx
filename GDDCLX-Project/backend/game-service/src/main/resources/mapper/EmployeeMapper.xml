@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    EmployeeMapper XML 映射文件（游戏微服务）
+    对应 Java 接口：com.example.game.mapper.EmployeeMapper
+    实体类：com.example.game.domain.Employee
+
+    注意：此为游戏微服务中的 employee 表只读副本
+    与 demo 微服务中的 EmployeeMapper.xml 结构一致
+    两个微服务共享同一 MySQL wechat 库的 employee 表
+-->
+<mapper namespace="com.example.game.mapper.EmployeeMapper">
+
+    <!-- ==================== 结果映射 ==================== -->
+
+    <!--
+        BaseResultMap：数据库列名 → Java属性映射
+        数据库使用蛇形命名（employee_id）→ Java使用驼峰命名（employeeId）
+        所有查询共用此映射，避免重复配置
+    -->
+    <resultMap id="BaseResultMap" type="com.example.game.domain.Employee">
+        <id column="id" property="id" jdbcType="INTEGER"/>               <!-- 主键 -->
+        <result column="employee_id" property="employeeId" jdbcType="VARCHAR"/>  <!-- 员工工号 -->
+        <result column="password" property="password" jdbcType="VARCHAR"/>       <!-- 密码（注意：查询会返回密码） -->
+        <result column="name" property="name" jdbcType="VARCHAR"/>               <!-- 姓名 -->
+        <result column="role" property="role" jdbcType="VARCHAR"/>               <!-- 角色：admin/employee -->
+        <result column="department" property="department" jdbcType="VARCHAR"/>   <!-- 部门 -->
+        <result column="position" property="position" jdbcType="VARCHAR"/>       <!-- 当前岗位 -->
+        <result column="status" property="status" jdbcType="VARCHAR"/>           <!-- 状态：在职/试用/离职 -->
+        <result column="positions" property="positions" jdbcType="VARCHAR"/>     <!-- JSON多岗位 -->
+        <result column="hire_date" property="hireDate" jdbcType="DATE"/>         <!-- 入职日期 -->
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/><!-- 创建时间 -->
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/><!-- 更新时间 -->
+    </resultMap>
+
+    <!--
+        通用列名SQL片段 — 避免每个查询重复写一遍字段列表
+        通过 <include refid="Base_Column_List"/> 引用
+    -->
+    <sql id="Base_Column_List">
+        id, employee_id, password, name, role, department, position, status, positions, hire_date, create_time, update_time
+    </sql>
+
+    <!-- ==================== 查询操作 ==================== -->
+
+    <!--
+        按工号查询员工 — 用于校验工号存在性（resolveEmployeeId）
+        被 GameController 的 getEmployeeId() 调用
+    -->
+    <select id="selectByEmployeeId" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM employee WHERE employee_id = #{employeeId}
+    </select>
+
+    <!--
+        全量查询 — 返回所有员工（用于名单展示等）
+    -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/> FROM employee
+    </select>
+
+    <!-- ==================== 写操作 ==================== -->
+
+    <!--
+        插入新员工 — useGeneratedKeys=true 自动回填自增ID
+    -->
+    <insert id="insert" parameterType="com.example.game.domain.Employee" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO employee (employee_id, password, name, role, department, position, status, positions, hire_date, create_time, update_time)
+        VALUES (#{employeeId}, #{password}, #{name}, #{role}, #{department}, #{position}, #{status}, #{positions}, #{hireDate}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!--
+        按原工号更新员工 — 支持修改工号
+        WHERE条件用 originalEmployeeId，SET用 employee 对象的属性
+        实现类通过 @Param("employee") 传入 Employee 对象
+    -->
+    <update id="updateByEmployeeId">
+        UPDATE employee
+        SET employee_id = #{employee.employeeId},
+            name = #{employee.name},
+            department = #{employee.department},
+            position = #{employee.position},
+            status = #{employee.status},
+            positions = #{employee.positions},
+            update_time = #{employee.updateTime}
+        WHERE employee_id = #{originalEmployeeId}
+    </update>
+
+    <!-- 按工号删除员工 -->
+    <delete id="deleteByEmployeeId">
+        DELETE FROM employee WHERE employee_id = #{employeeId}
+    </delete>
+
+</mapper>
