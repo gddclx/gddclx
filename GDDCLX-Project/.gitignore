@@ -21,6 +21,7 @@ logs/
 
 # === Node.js（论文生成脚本依赖） ===
 node_modules/
+package.json
 package-lock.json
 
 # === IDE ===

@@ -54,3 +54,18 @@ Desktop.ini
 build/
 out/
 *.log
+
+# ===== 大型工具/数据导出 =====
+pandoc.exe
+pandoc.zip
+wechat_dump.sql
+*.sql.dump
+
+# ===== 论文生成脚本 =====
+package.json
+package-lock.json
+generate-thesis.js
+generate-thesis-html.js
+
+# ===== 个人文档 =====
+毕业论文.docx
